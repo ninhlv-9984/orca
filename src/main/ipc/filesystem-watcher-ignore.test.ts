@@ -90,4 +90,24 @@ describe('buildParcelWatcherIgnoreOptions', () => {
       expect(regex.test('project\\node_modules/file.ts')).toBe(platform === 'win32')
     }
   })
+
+  it('ignores Rails generated trees but keeps sibling source dirs', () => {
+    for (const platform of ['darwin', 'linux', 'win32'] as const) {
+      setPlatform(platform)
+      const options = buildParcelWatcherIgnoreOptions(WATCHER_IGNORE_DIRS)
+      const regex = new RegExp(options.ignoreGlobs?.[0] ?? '(?!)')
+      for (const path of [
+        'tmp/cache/bootsnap/compile-cache-iseq/96',
+        'vendor/bundle/ruby/3.3.0/gems',
+        'public/uploads/user/1',
+        'engines/admin/vendor/bundle/ruby'
+      ]) {
+        expect(regex.test(path)).toBe(true)
+        expect(regex.test(path.replaceAll('/', '\\'))).toBe(platform === 'win32')
+      }
+      for (const path of ['vendor/assets/x.js', 'vendor/javascript/a.js', 'public/packs/a.js']) {
+        expect(regex.test(path)).toBe(false)
+      }
+    }
+  })
 })
