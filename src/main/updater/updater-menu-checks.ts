@@ -4,6 +4,7 @@ import { isMacInstallRequested } from '../updater-mac-install'
 import type { UpdateCheckOptions } from '../../shared/update-status-types'
 import type { ReleaseChannel } from '../../shared/release-channel'
 import { UpdaterScheduling } from './updater-scheduling'
+import { FORK_UPDATES_DISABLED, FORK_UPDATES_DISABLED_MESSAGE } from './fork-build'
 
 /** Handles checks initiated from the desktop menu and modifier-key variants. */
 export abstract class UpdaterMenuChecks extends UpdaterScheduling {
@@ -13,6 +14,10 @@ export abstract class UpdaterMenuChecks extends UpdaterScheduling {
       this.quitAndInstallInProgress ||
       isMacInstallRequested()
     ) {
+      return
+    }
+    if (FORK_UPDATES_DISABLED) {
+      this.sendErrorStatus(FORK_UPDATES_DISABLED_MESSAGE, true)
       return
     }
     if (!app.isPackaged || is.dev) {
