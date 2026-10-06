@@ -11,8 +11,15 @@ export const WATCHER_IGNORE_DIRS: string[] = [
   '.cache',
   'target',
   '.venv',
-  '__pycache__'
+  '__pycache__',
+  // Rails: bootsnap cache, pids, sockets — tens of thousands of dirs per worktree.
+  'tmp'
 ]
+
+// Multi-segment generated paths (Rails bundler installs, uploaded files). Kept out of
+// WATCHER_IGNORE_DIRS because the WSL watcher feeds those names to `find -name`, which
+// rejects slashes; they are only applied through the Parcel regex below.
+export const WATCHER_IGNORE_NESTED_PATHS: readonly string[] = ['vendor/bundle', 'public/uploads']
 
 // Why: macOS FSEventStreamSetExclusionPaths accepts at most 8 paths and fails
 // closed — one entry over the cap and @parcel/watcher silently loses ALL
@@ -33,10 +40,14 @@ function escapeRegex(value: string): string {
 }
 
 function buildNestedDirectoryRegex(ignoreDirs: readonly string[]): string {
-  const alternatives = ignoreDirs.map(escapeRegex).join('|')
+  const entries = [...ignoreDirs, ...WATCHER_IGNORE_NESTED_PATHS]
   if (process.platform === 'win32') {
+    const alternatives = entries
+      .map((entry) => entry.split('/').map(escapeRegex).join('[\\\\/]'))
+      .join('|')
     return `^(?:[^\\\\/]+[\\\\/])*(?:${alternatives})(?:[\\\\/][\\s\\S]*)?$`
   }
+  const alternatives = entries.map(escapeRegex).join('|')
   // Why: backslash is a legal POSIX filename character, not a path separator.
   return `^(?:[^/]+/)*(?:${alternatives})(?:/[\\s\\S]*)?$`
 }
