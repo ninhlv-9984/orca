@@ -6,6 +6,7 @@ import type {
   WorkspaceLineage
 } from '../../shared/worktree/lineage-types'
 import { worktreeWorkspaceKey } from '../../shared/workspace-scope'
+import { inheritWorkspaceTags } from '../worktree-tags'
 import type { RuntimeStore } from './runtime-store-contract'
 
 type LineageParent =
@@ -51,6 +52,15 @@ export function recordCreatedWorktreeLineage(
     return { lineage, workspaceLineage, warnings }
   }
 
+  if (store) {
+    inheritWorkspaceTags(
+      store,
+      worktree.id,
+      resolution.parent.type === 'folder'
+        ? resolution.parent.folderWorkspace.tags
+        : store.getWorktreeMeta(resolution.parent.worktree.id)?.tags
+    )
+  }
   const childInstanceId = worktree.instanceId
   const parentInstanceId = resolution.parent.instanceId
   const createdAt = Date.now()

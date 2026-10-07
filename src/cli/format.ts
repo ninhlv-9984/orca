@@ -59,6 +59,7 @@ export {
   formatRepoList,
   formatRepoRefs,
   formatRepoShow,
+  formatWorkspaceTags,
   formatWorktreeList,
   formatWorktreePs,
   formatWorktreeShow

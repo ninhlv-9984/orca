@@ -77,4 +77,45 @@ describe('buildRuntimeWorktreePsSummaries', () => {
 
     expect(summary?.removalError).toBe('Operation not permitted')
   })
+
+  it('carries git and folder workspace tags and omits them when absent', () => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the builder reads only these fields for a git row.
+    const worktree = {
+      id: 'repo-1::/workspace/app',
+      repoId: 'repo-1',
+      path: '/workspace/app',
+      branch: 'feature',
+      isArchived: false,
+      isMainWorktree: false,
+      parentWorktreeId: null,
+      childWorktreeIds: [],
+      lineage: null,
+      lastActivityAt: 0
+    } as unknown as ResolvedWorktree
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the builder reads only these store members.
+    const store = {
+      getRepos: () => [],
+      getWorktreeMeta: () => ({ tags: ['api', 'web'] }),
+      getAllWorktreeMeta: () => ({}),
+      getFolderWorkspaces: () => [
+        {
+          id: 'folder-1',
+          projectGroupId: 'group-1',
+          name: 'Docs',
+          folderPath: '/workspace/docs',
+          tags: ['docs']
+        }
+      ],
+      getProjectGroups: () => [{ id: 'group-1', name: 'Group', parentPath: '/workspace' }]
+    } as unknown as RuntimeStore
+
+    const summaries = buildRuntimeWorktreePsSummaries({
+      store,
+      resolvedWorktrees: [worktree],
+      platformByRepoId: new Map()
+    })
+
+    expect(summaries.get(worktree.id)?.tags).toEqual(['api', 'web'])
+    expect(summaries.get('folder:folder-1')?.tags).toEqual(['docs'])
+  })
 })

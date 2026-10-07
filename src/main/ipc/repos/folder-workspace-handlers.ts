@@ -9,6 +9,7 @@ import {
   getFolderWorkspacePathStatusForPath
 } from '../../project-groups/folder-workspace-path-status'
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
+import { ensureWorkspaceTagColors } from '../../worktree-tags'
 import { notifyReposChanged } from './repos-changed-notification'
 import {
   FolderWorkspaceCreateArgs,
@@ -100,6 +101,7 @@ export function registerFolderWorkspaceHandlers(
       }
       const updated = store.updateFolderWorkspace(args.folderWorkspaceId, args.updates)
       if (updated) {
+        ensureWorkspaceTagColors(store, updated.tags)
         notifyReposChanged(mainWindow)
       }
       return updated

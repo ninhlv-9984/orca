@@ -137,6 +137,7 @@ import {
   retireGeneratedWorktreeName
 } from '../worktree-name-retirement'
 import { createRetiredNameLookup } from '../../shared/worktree/retired-name-registry'
+import { inheritWorkspaceTags } from '../worktree-tags'
 import { findPendingWorktreeRemovalConflict } from '../worktree-removal-table'
 // Why: bound the fallback `git fetch origin` so a Windows credential-manager GUI hang (STA-1292) can't wedge worktree creation forever.
 const CREATE_BASE_FALLBACK_FETCH_TIMEOUT_MS = 60_000
@@ -289,6 +290,14 @@ export function recordWorkspaceLineageForCreatedWorktree(
   if (parentOutsideLineageBoundary) {
     return NO_CREATED_WORKTREE_LINEAGE
   }
+
+  inheritWorkspaceTags(
+    store,
+    worktree.id,
+    parentScope.type === 'worktree'
+      ? parentWorktreeMeta?.tags
+      : store.getFolderWorkspace(parentScope.folderWorkspaceId)?.tags
+  )
 
   const workspaceLineage = store.setWorkspaceLineage({
     childWorkspaceKey,

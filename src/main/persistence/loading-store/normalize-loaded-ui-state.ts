@@ -14,6 +14,7 @@ import {
   normalizeShowDotfilesByWorktree,
   normalizeSortBy
 } from '../applying-settings/ui-selection-normalization'
+import { normalizeWorkspaceTagColors } from '../../../shared/worktree/worktree-tags'
 import { stripMainOwnedTelemetryMarkerFromUI } from '../applying-settings/ui-interaction-merge'
 import {
   readDeprecatedExperimentFlag,
@@ -225,6 +226,7 @@ export function normalizeLoadedUiState(
     _explorerDisplayRootMigrated: true,
     explorerDisplayRootByWorktree,
     showDotfilesByWorktree: normalizeShowDotfilesByWorktree(parsed.ui?.showDotfilesByWorktree),
+    worktreeTagColors: normalizeWorkspaceTagColors(parsed.ui?.worktreeTagColors),
     workspaceStatuses,
     _workspaceStatusesDefaultOrderMigrated: true,
     _workspaceStatusesReorderedDefaultRepaired: true,

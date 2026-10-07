@@ -9,7 +9,8 @@ import { snapshotPendingWorktreeRemovals } from '../../../worktree-removal-listi
 import {
   WorktreeDetectedListParams,
   WorktreeListParams,
-  WorktreePsParams
+  WorktreePsParams,
+  WorktreeTagColorSet
 } from '../../../../shared/rpc-contract/worktree-params'
 
 export const WORKTREE_CATALOG_METHODS = [
@@ -25,7 +26,8 @@ export const WORKTREE_CATALOG_METHODS = [
           supportsWorktreeVisibilitySourceDefaults(
             context,
             params.supportsWorktreeVisibilitySourceDefaults
-          )
+          ),
+          ...(params.tags ? [params.tags] : [])
         ),
         context,
         pendingAtScan
@@ -52,6 +54,18 @@ export const WORKTREE_CATALOG_METHODS = [
         pendingAtScan
       )
     }
+  }),
+  defineMethod({
+    name: 'worktree.tags',
+    permission: 'workspace',
+    params: null,
+    handler: (_params, { runtime }) => ({ tags: runtime.listWorkspaceTags() })
+  }),
+  defineMethod({
+    name: 'worktree.setTagColor',
+    permission: 'workspace',
+    params: WorktreeTagColorSet,
+    handler: (params, { runtime }) => runtime.setWorkspaceTagColor(params.tag, params.color)
   }),
   defineMethod({
     name: 'worktree.listRetiredNames',
