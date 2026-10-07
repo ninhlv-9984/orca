@@ -173,7 +173,7 @@ import {
 import { createRetiredNameLookup } from '../../shared/worktree/retired-name-registry'
 import { toLocalBaseRefRefreshResult } from '../../shared/worktree/local-base-branch-fast-forward'
 import { isSshRequestOutcomeUnverifiable } from '../ssh/ssh-channel-multiplexer'
-import { inheritWorkspaceTags } from '../worktree-tags'
+import { inheritWorkspaceTags, withStoredWorkspaceTags } from '../worktree-tags'
 import { findPendingWorktreeRemovalConflict } from '../worktree-removal-table'
 
 const SSH_WORKTREE_CREATE_FETCH_FRESHNESS_MS = 30_000
@@ -2130,16 +2130,18 @@ export async function createRemoteWorktree(
       : {}),
     ...(args.workspaceStatus !== undefined ? { workspaceStatus: args.workspaceStatus } : {})
   }
-  const { worktree } = timing.timeSync('persist_metadata', () => {
+  const { worktree: persistedWorktree } = timing.timeSync('persist_metadata', () => {
     const meta = store.setWorktreeMeta(worktreeId, metaUpdates)
     return { worktree: mergeWorktree(repo.id, created, meta) }
   })
   const { lineage: worktreeLineage, workspaceLineage } = recordWorkspaceLineageForCreatedWorktree(
     store,
     args,
-    worktree,
+    persistedWorktree,
     now
   )
+  // Why: lineage recording inherits the parent's tags after the projection above.
+  const worktree = withStoredWorkspaceTags(store, persistedWorktree)
 
   // Why: shared/symlink paths, `orca.yaml` shared directories, and `.worktreeinclude` copies are local-only; remote (SSH) support needs a new relay method + auth surface, so all are skipped here.
 
@@ -2836,16 +2838,18 @@ async function performLocalWorktreeCreate(
       : {}),
     ...(args.workspaceStatus !== undefined ? { workspaceStatus: args.workspaceStatus } : {})
   }
-  const { worktree } = timing.timeSync('persist_metadata', () => {
+  const { worktree: persistedWorktree } = timing.timeSync('persist_metadata', () => {
     const meta = store.setWorktreeMeta(worktreeId, metaUpdates)
     return { worktree: mergeWorktree(repo.id, created, meta) }
   })
   const { lineage: worktreeLineage, workspaceLineage } = recordWorkspaceLineageForCreatedWorktree(
     store,
     args,
-    worktree,
+    persistedWorktree,
     now
   )
+  // Why: lineage recording inherits the parent's tags after the projection above.
+  const worktree = withStoredWorkspaceTags(store, persistedWorktree)
   // Why: reuse the roots creation already paid for via `git worktree list` so later IPC doesn't lazily rescan and trip macOS privacy prompts.
   // Why gated: registration replaces the repo's root set, so registering a create recovered without
   // a listing would revoke filesystem access to every worktree that listing would have named.

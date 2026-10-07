@@ -26,7 +26,7 @@ export const WORKTREE_CATALOG_METHODS = [
             context,
             params.supportsWorktreeVisibilitySourceDefaults
           ),
-          ...(params.tags ? [params.tags] : [])
+          params.tags
         ),
         context,
         pendingAtScan

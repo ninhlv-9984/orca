@@ -93,8 +93,8 @@ describe('worktree.ps catalog snapshots', () => {
       { clientCapabilities: [] }
     )
 
-    expect(runtime.getWorktreePs).toHaveBeenNthCalledWith(1, 10_000, false)
-    expect(runtime.getWorktreePs).toHaveBeenNthCalledWith(2, 10_000, true)
-    expect(runtime.getWorktreePs).toHaveBeenNthCalledWith(3, 10_000, true)
+    expect(runtime.getWorktreePs).toHaveBeenNthCalledWith(1, 10_000, false, undefined)
+    expect(runtime.getWorktreePs).toHaveBeenNthCalledWith(2, 10_000, true, undefined)
+    expect(runtime.getWorktreePs).toHaveBeenNthCalledWith(3, 10_000, true, undefined)
   })
 })

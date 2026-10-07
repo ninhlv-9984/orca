@@ -75,9 +75,12 @@ describe('updateRuntimeManagedWorktreeMetadata tags', () => {
       notifyChanged: vi.fn(),
       showWorktree: vi.fn(async () => worktree as unknown as Worktree)
     }
-    const run = (updates: Parameters<typeof updateRuntimeManagedWorktreeMetadata>[0]['updates']) =>
+    const run = (
+      updates: Parameters<typeof updateRuntimeManagedWorktreeMetadata>[0]['updates'],
+      selector = `id:${worktree.id}`
+    ) =>
       updateRuntimeManagedWorktreeMetadata({
-        selector: `id:${worktree.id}`,
+        selector,
         updates,
         // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: partial fake of the store members the updater reads.
         store: store as unknown as RuntimeStore,
@@ -120,6 +123,12 @@ describe('updateRuntimeManagedWorktreeMetadata tags', () => {
     await run({ tags: null })
     expect(Object.keys(getUi().worktreeTagColors ?? {}).sort()).toEqual(['api', 'web'])
     expect(store.updateUI).toHaveBeenCalledTimes(2)
+  })
+
+  it('refuses tag updates on entity folder workspaces with a clear message', async () => {
+    const { run } = setup()
+    await expect(run({ addTags: ['api'] }, 'folder:abc')).rejects.toThrow('folder workspaces')
+    await expect(run({ tags: null }, 'id:folder:abc')).rejects.toThrow('folder workspaces')
   })
 
   it('does not touch tags or colors for unrelated updates', async () => {
