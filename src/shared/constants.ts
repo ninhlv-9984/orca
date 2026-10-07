@@ -218,6 +218,7 @@ export function getDefaultUIState(): PersistedUIState {
     _explorerDisplayRootMigrated: true,
     explorerDisplayRootByWorktree: {},
     showDotfilesByWorktree: {},
+    worktreeTagColors: {},
     filterRepoIds: [],
     agentsVisibleHostIds: null,
     agentsFilterRepoIds: [],

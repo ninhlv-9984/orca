@@ -24,6 +24,7 @@ import { normalizeFeatureTipIds } from '../../../shared/feature-tips'
 import { normalizeContextualTourIds } from '../../../shared/contextual-tours'
 import { normalizeFeatureInteractions } from '../../../shared/feature-interactions'
 import { mergeWorkspaceCleanupUIState } from '../../../shared/workspace-cleanup-ui-state'
+import { normalizeWorkspaceTagColors } from '../../../shared/worktree/worktree-tags'
 import { persistedUIValuesEqual } from '../../../shared/persisted-ui-equality'
 import {
   PROTECTED_SECRET_SLOT,
@@ -182,6 +183,11 @@ export function updatePersistedUI(
       sanitizedUpdates.showDotfilesByWorktree !== undefined
         ? normalizeShowDotfilesByWorktree(sanitizedUpdates.showDotfilesByWorktree)
         : normalizeShowDotfilesByWorktree(operations.state.ui?.showDotfilesByWorktree),
+    // Why: main assigns colors while clients write others; merge so a stale snapshot never drops a tag's color.
+    worktreeTagColors: {
+      ...normalizeWorkspaceTagColors(operations.state.ui?.worktreeTagColors),
+      ...normalizeWorkspaceTagColors(sanitizedUpdates.worktreeTagColors)
+    },
     // Why: a stale renderer or paired client must not erase a dismissal, or a one-time tip replays.
     featureTipsSeenIds:
       sanitizedUpdates.featureTipsSeenIds !== undefined

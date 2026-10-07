@@ -9,6 +9,7 @@ import type {
 } from './worktree/lineage-types'
 import type { RuntimeListingHostScope } from './runtime-listing-host-scope'
 import type { GitWorktreeInfo, Worktree } from './worktree/types'
+import type { WorkspaceTagColorId } from './worktree/worktree-tags'
 
 export type RuntimeWorktreeAgentRow = {
   paneKey: string
@@ -54,6 +55,7 @@ export type RuntimeWorktreePsSummary = {
   childWorktreeIds: string[]
   displayName: string
   workspaceStatus: string
+  tags?: string[]
   sortOrder: number
   manualOrder?: number
   lastActivityAt?: number
@@ -133,6 +135,12 @@ export type RuntimeWorktreeCreateResult = {
   warning?: string
   startupTerminal?: CreateWorktreeResult['startupTerminal']
   agentTerminalHandle?: string
+}
+
+export type RuntimeWorkspaceTag = {
+  name: string
+  color: WorkspaceTagColorId
+  count: number
 }
 
 export type RuntimeWorktreeRemoveResult = RemoveWorktreeResult & {

@@ -11,6 +11,8 @@ import {
   persistRuntimeManagedWorktreeSortOrder,
   updateRuntimeManagedWorktreeMetadata
 } from './runtime-managed-worktree-metadata'
+import type { WorkspaceTagColorId } from '../../shared/worktree/worktree-tags'
+import { listRuntimeWorkspaceTags, setRuntimeWorkspaceTagColor } from './runtime-workspace-tags'
 import { resolveRuntimeGitHubWorktreeBase } from './runtime-github-worktree-base'
 import { resolveRuntimeGitLabWorktreeBase } from './runtime-gitlab-worktree-base'
 import { listWorktreesStrict } from '../git/worktree-listing'
@@ -118,8 +120,11 @@ export class OrcaRuntimeWithCreateManagedRemoteWorktree extends OrcaRuntimeWithC
 
   async updateManagedWorktreeMeta(
     worktreeSelector: string,
-    updates: Omit<Partial<WorktreeMeta>, 'pushTarget'> & {
+    updates: Omit<Partial<WorktreeMeta>, 'pushTarget' | 'tags'> & {
       pushTarget?: GitPushTarget | null
+      tags?: string[] | null
+      addTags?: string[]
+      removeTags?: string[]
       lineage?: {
         parentWorktree?: string
         noParent?: boolean
@@ -163,6 +168,20 @@ export class OrcaRuntimeWithCreateManagedRemoteWorktree extends OrcaRuntimeWithC
       notifyChanged: (repoId) => this.notifyWorktreesChanged(repoId),
       showWorktree: (selector) => this.showManagedWorktree(selector)
     })
+  }
+
+  listWorkspaceTags() {
+    if (!this.store) {
+      throw new Error('runtime_unavailable')
+    }
+    return listRuntimeWorkspaceTags(this.store)
+  }
+
+  setWorkspaceTagColor(tag: string, color: WorkspaceTagColorId) {
+    if (!this.store) {
+      throw new Error('runtime_unavailable')
+    }
+    return setRuntimeWorkspaceTagColor(this.store, tag, color)
   }
 
   persistManagedWorktreeSortOrder(orderedIds: string[]): { updated: number } {

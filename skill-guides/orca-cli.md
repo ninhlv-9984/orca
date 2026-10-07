@@ -89,6 +89,10 @@ ORCA worktree set --worktree id:<repoId>::<worktreePath> --display-name "My Task
 ORCA worktree set --worktree active --comment "reproduced bug; testing fix" --json
 ORCA worktree set --worktree active --workspace-status in-review --json
 ORCA worktree set --worktree active --unread --json
+ORCA worktree set --worktree active --tag backend --tag urgent --json
+ORCA worktree set --worktree active --untag urgent --json
+ORCA worktree tags --json
+ORCA worktree ps --tag backend --json
 ORCA worktree create --repo id:<repoId> --name review-task --pr 123 --json
 ORCA worktree set --worktree active --gitlab-issue '#42' --gitlab-mr '!77' --json
 ORCA worktree set --worktree active --pr null --gitlab-mr null --json
@@ -167,6 +171,27 @@ ORCA worktree set --worktree active --comment "fix implemented; running integrat
 Update after a repro, fix, validation, handoff, or blocker. Keep it short and current. A failed comment update is not an error to surface unless the user asked for Orca state.
 
 Card status uses `--workspace-status <id>`; defaults are `todo`, `in-progress`, `in-review`, `completed`. `--unread` puts the workspace's unread dot in the sidebar to ask for a person's attention; `--read` clears it.
+
+## Worktree Tags
+
+Tags are short free-form labels (max 32 chars, no commas, case-insensitive) the user filters the sidebar by. They span all repos; a tag exists while at least one workspace carries it, and Orca picks its color.
+
+```text
+ORCA worktree tags --json
+ORCA worktree set --worktree active --tag backend --json
+ORCA worktree set --worktree active --untag backend --json
+ORCA worktree set --worktree active --tags backend,api --json
+ORCA worktree set --worktree active --tags null --json
+ORCA worktree ps --tag backend --tag api --json
+ORCA worktree tag-color --tag backend --color emerald --json
+```
+
+- `worktree tags` lists `{name, color, count}`. Run it first and reuse an existing tag instead of inventing a near-duplicate.
+- You may tag the workspace you are working in. `--tag`/`--untag` repeat and apply against the current tags, so parallel agents do not overwrite each other. `--tags a,b` replaces the whole set and `--tags null` clears it; avoid both unless the user asked.
+- Do not remove tags you did not add unless the user asks.
+- `worktree ps --tag` repeats and matches any of the tags. `worktree list`, `show` and `ps` JSON include `tags` (absent when empty).
+- A new workspace created with a parent inherits the parent's tags.
+- `tag-color` takes `blue`, `sky`, `violet`, `amber`, `emerald` or `rose`; change a color only when asked.
 
 Issue/review links: `--pr` writes the GitHub pull request number; `--gitlab-issue` and
 `--gitlab-mr` write separate GitLab numbers and accept `#42` / `!77` respectively.
