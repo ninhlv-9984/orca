@@ -48,27 +48,23 @@ pnpm tc
 # Tests of every file the fork commits touch: touched tests themselves, plus
 # the sibling foo.test.ts(x) / foo.*.test.ts(x) of each touched source file.
 echo "==> testing fork patches"
-mapfile -t touched < <(git diff --name-only "$new"..HEAD)
-declare -A seen=()
+# Plain bash 3.2 (macOS /bin/bash): no mapfile, no associative arrays.
 tests=()
-add_test() {
-  [[ -f "$1" && -z "${seen[$1]:-}" ]] || return 0
-  seen[$1]=1
-  tests+=("$1")
-}
-for f in "${touched[@]}"; do
-  [[ "$f" == src/* && "$f" =~ \.tsx?$ && -f "$f" ]] || continue
-  if [[ "$f" =~ \.test\.tsx?$ ]]; then
-    add_test "$f"
-    continue
-  fi
-  base="${f%.*}" ext="${f##*.}"
-  shopt -s nullglob
-  for t in "$base.test.$ext" "$base".*.test.ts "$base".*.test.tsx; do
-    add_test "$t"
-  done
-  shopt -u nullglob
-done
+while IFS= read -r t; do
+  tests+=("$t")
+done < <(
+  git diff --name-only "$new"..HEAD -- 'src/*.ts' 'src/*.tsx' | while IFS= read -r f; do
+    [[ -f "$f" ]] || continue
+    if [[ "$f" =~ \.test\.tsx?$ ]]; then
+      echo "$f"
+      continue
+    fi
+    base="${f%.*}"
+    for t in "$base".test.ts "$base".test.tsx "$base".*.test.ts "$base".*.test.tsx; do
+      [[ -f "$t" ]] && echo "$t"
+    done
+  done | sort -u
+)
 if ((${#tests[@]} == 0)); then
   echo "orca-rebuild: no tests relate to fork-touched files; skipping."
 else
