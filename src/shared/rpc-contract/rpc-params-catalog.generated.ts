@@ -565,6 +565,7 @@ import {
   WorktreeSelector as WorktreeSelectorOfWorktreeParams,
   WorktreeSet,
   WorktreeSortOrder,
+  WorktreeTagColorSet,
   WorktreeTeardownMissingTerminalsParams
 } from './worktree-params'
 import { SkillBundleInstallRequestSchema } from '../skill-bundle-install-contract'
@@ -1248,8 +1249,10 @@ export const RPC_PARAMS_BY_METHOD = {
   'worktree.resolvePrBase': WorktreeResolvePrBase,
   'worktree.rm': WorktreeRemove,
   'worktree.set': WorktreeSet,
+  'worktree.setTagColor': WorktreeTagColorSet,
   'worktree.show': WorktreeSelectorOfWorktreeParams,
   'worktree.sleep': WorktreeSelectorOfWorktreeParams,
+  'worktree.tags': null,
   'worktree.teardownMissingTerminals': WorktreeTeardownMissingTerminalsParams
 } as const
 

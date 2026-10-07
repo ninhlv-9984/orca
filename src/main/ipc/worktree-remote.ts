@@ -174,6 +174,7 @@ import {
 import { createRetiredNameLookup } from '../../shared/worktree/retired-name-registry'
 import { toLocalBaseRefRefreshResult } from '../../shared/worktree/local-base-branch-fast-forward'
 import { isSshRequestOutcomeUnverifiable } from '../ssh/ssh-channel-multiplexer'
+import { inheritWorkspaceTags } from '../worktree-tags'
 import { findPendingWorktreeRemovalConflict } from '../worktree-removal-table'
 
 const SSH_WORKTREE_CREATE_FETCH_FRESHNESS_MS = 30_000
@@ -358,6 +359,14 @@ export function recordWorkspaceLineageForCreatedWorktree(
   if (parentOutsideLineageBoundary) {
     return NO_CREATED_WORKTREE_LINEAGE
   }
+
+  inheritWorkspaceTags(
+    store,
+    worktree.id,
+    parentScope.type === 'worktree'
+      ? parentWorktreeMeta?.tags
+      : store.getFolderWorkspace(parentScope.folderWorkspaceId)?.tags
+  )
 
   const workspaceLineage = store.setWorkspaceLineage({
     childWorkspaceKey,

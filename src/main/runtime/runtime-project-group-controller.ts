@@ -15,6 +15,7 @@ import {
 import { FolderWorkspaceCreateRefusedError } from '../project-groups/folder-workspace-create-refusal'
 import { getSshFilesystemProvider } from '../providers/ssh-filesystem-dispatch'
 import type { RuntimeStore } from './runtime-store-contract'
+import { ensureWorkspaceTagColors } from '../worktree-tags'
 import { folderWorkspaceKey } from '../../shared/workspace-scope'
 
 type RuntimeProjectGroupDependencies = {
@@ -41,6 +42,7 @@ type FolderWorkspaceUpdates = Partial<
     | 'sortOrder'
     | 'manualOrder'
     | 'workspaceStatus'
+    | 'tags'
     | 'createdWithAgent'
     | 'pendingFirstAgentMessageRename'
     | 'firstAgentMessageRenameError'
@@ -215,6 +217,7 @@ export class RuntimeProjectGroupController {
     }
     const updated = store.updateFolderWorkspace(folderWorkspaceId, updates)
     if (updated) {
+      ensureWorkspaceTagColors(store, updated.tags)
       this.deps.notifyReposChanged()
     }
     return updated

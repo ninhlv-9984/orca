@@ -194,6 +194,7 @@ export type {
   RuntimeWorktreeCreateResult,
   RuntimeWorktreeListResult,
   RuntimeWorktreePsConditionalResult,
+  RuntimeWorkspaceTag,
   RuntimeWorktreePsResult,
   RuntimeWorktreePsSnapshotResult,
   RuntimeWorktreePsSummary,

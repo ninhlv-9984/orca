@@ -3,13 +3,19 @@ import type { WorktreeMeta } from '../../shared/worktree/meta-types'
 import { worktreeWorkspaceKey } from '../../shared/workspace-scope'
 import { splitWorktreeId } from '../../shared/worktree/id'
 import { planWorktreeSortOrderUpdates } from '../../shared/worktree/sort-order-update'
+import { addWorkspaceTags, removeWorkspaceTags } from '../../shared/worktree/worktree-tags'
+import { ensureWorkspaceTagColors } from '../worktree-tags'
 import { stripOrcaProvenanceMetaUpdates } from '../worktree-removal-safety'
 import type { RuntimeStore } from './runtime-store-contract'
 import { RuntimeLineageError } from './runtime-worktree-lineage-resolution'
 import type { ResolvedWorktree } from './runtime-worktree-path-identity'
 
-type Updates = Omit<Partial<WorktreeMeta>, 'pushTarget'> & {
+type Updates = Omit<Partial<WorktreeMeta>, 'pushTarget' | 'tags'> & {
   pushTarget?: GitPushTarget | null
+  /** Replace; null clears. Applied before `addTags`/`removeTags`. */
+  tags?: string[] | null
+  addTags?: string[]
+  removeTags?: string[]
   lineage?: { parentWorktree?: string; noParent?: boolean }
 }
 
@@ -29,7 +35,7 @@ export async function updateRuntimeManagedWorktreeMetadata(args: {
   ports: Ports
 }): Promise<Worktree> {
   const worktree = await args.ports.resolveWorktree(args.selector)
-  const { lineage, ...metaUpdates } = args.updates
+  const { lineage, tags, addTags, removeTags, ...metaUpdates } = args.updates
   if (lineage?.parentWorktree) {
     args.ports.invalidateResolved()
     args.ports.invalidateScan(worktree.repoId)
@@ -91,10 +97,24 @@ export async function updateRuntimeManagedWorktreeMetadata(args: {
   }
   const metadataUpdates = stripOrcaProvenanceMetaUpdates(persisted)
   const executionHostId = worktree.identity?.executionHostId ?? worktree.hostId
-  if (executionHostId && args.store.setWorktreeMetaForHost) {
-    args.store.setWorktreeMetaForHost(worktree.id, executionHostId, metadataUpdates)
-  } else {
-    args.store.setWorktreeMeta(worktree.id, metadataUpdates)
+  const touchesTags = tags !== undefined || Boolean(addTags) || Boolean(removeTags)
+  if (touchesTags) {
+    // Why: read the host's current tags synchronously with the write so concurrent add/remove callers don't clobber each other.
+    const current =
+      executionHostId && args.store.getWorktreeMetaForHost
+        ? args.store.getWorktreeMetaForHost(worktree.id, executionHostId)
+        : args.store.getWorktreeMeta(worktree.id)
+    const base = tags === undefined ? current?.tags : (tags ?? undefined)
+    // Why: [] (not undefined) so the merge sees the clear; it is stored as absent.
+    metadataUpdates.tags =
+      removeWorkspaceTags(addWorkspaceTags(base, addTags ?? []), removeTags ?? []) ?? []
+  }
+  const written =
+    executionHostId && args.store.setWorktreeMetaForHost
+      ? args.store.setWorktreeMetaForHost(worktree.id, executionHostId, metadataUpdates)
+      : args.store.setWorktreeMeta(worktree.id, metadataUpdates)
+  if (touchesTags) {
+    ensureWorkspaceTagColors(args.store, written.tags)
   }
   // Why: CLI callers need an explicit push for metadata changed outside the renderer's optimistic update path.
   args.ports.invalidateResolved()

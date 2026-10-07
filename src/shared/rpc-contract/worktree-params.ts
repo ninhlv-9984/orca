@@ -13,6 +13,7 @@ import { RUNTIME_NAVIGATION_TARGETS } from '../runtime-navigation'
 import { WorkspaceLinkedItemSchema } from '../workspace-linked-item-schema'
 import { WorkspaceAttachmentsSchema } from '../workspace-attachment-schema'
 import { DiffCommentSchema, MobileDiffReviewSchema } from '../diff-comment-schema'
+import { WorkspaceTagColorSchema, WorkspaceTagSchema } from './workspace-tag-params'
 import { TaskSourceContextSchema } from '../task-source-context-schema'
 import { isWorkspaceLinkedItemSourceContextMatch } from '../workspace-linked-item-source-context'
 
@@ -72,7 +73,14 @@ export const WorktreeTeardownMissingTerminalsParams = WorktreeDetectedListParams
 export const WorktreePsParams = z.object({
   limit: OptionalFiniteNumber,
   afterSnapshotId: z.string().min(1).max(128).nullable().optional(),
-  supportsWorktreeVisibilitySourceDefaults: z.literal(true).optional()
+  supportsWorktreeVisibilitySourceDefaults: z.literal(true).optional(),
+  // Why: OR filter applied before `limit` so a capped page still holds the tagged rows.
+  tags: z.array(WorkspaceTagSchema).optional()
+})
+
+export const WorktreeTagColorSet = z.object({
+  tag: WorkspaceTagSchema,
+  color: WorkspaceTagColorSchema
 })
 
 export const WorktreeSortOrder = z.object({
@@ -147,6 +155,10 @@ export const WorktreeSet = WorktreeSelector.extend({
   sparsePresetId: OptionalString,
   baseRef: OptionalString,
   workspaceStatus: OptionalString,
+  // Why: `tags` replaces (null clears); add/remove apply against the host's current value so concurrent callers don't clobber each other.
+  tags: z.array(WorkspaceTagSchema).nullable().optional(),
+  addTags: z.array(WorkspaceTagSchema).optional(),
+  removeTags: z.array(WorkspaceTagSchema).optional(),
   pushTarget: z
     .object({
       remoteName: z.string(),

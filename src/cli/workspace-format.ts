@@ -2,6 +2,7 @@ import type { PublicKnownRuntimeEnvironment } from '../shared/runtime-environmen
 import type {
   RuntimeRepoList,
   RuntimeRepoSearchRefs,
+  RuntimeWorkspaceTag,
   RuntimeWorktreeListResult,
   RuntimeWorktreePsResult,
   RuntimeWorktreeRecord
@@ -132,6 +133,17 @@ export function formatEnvironment(environment: PublicKnownRuntimeEnvironment): s
   ].join('\n')
 }
 
+export function formatWorkspaceTags(result: { tags: RuntimeWorkspaceTag[] }): string {
+  if (result.tags.length === 0) {
+    return 'No tags.'
+  }
+  return result.tags.map((tag) => `${tag.name}  ${tag.color}  ${tag.count}`).join('\n')
+}
+
+function formatTagsSuffix(tags: readonly string[] | undefined, separator: string): string {
+  return tags?.length ? `${separator}tags: ${tags.join(', ')}` : ''
+}
+
 export function formatWorktreePs(result: WithAnnotatedHostScope<RuntimeWorktreePsResult>): string {
   const scope = formatListingHostScope(result.hostScope)
   if (result.worktrees.length === 0) {
@@ -140,7 +152,7 @@ export function formatWorktreePs(result: WithAnnotatedHostScope<RuntimeWorktreeP
   const body = result.worktrees
     .map(
       (worktree) =>
-        `${worktree.repo} ${worktree.branch}  host=${worktree.hostId ?? 'unverifiable'}  ${formatWorktreePsTerminalFields(worktree)}  unread:${worktree.unread ? 'yes' : 'no'}\n${worktree.path}${worktree.preview ? `\npreview: ${worktree.preview}` : ''}`
+        `${worktree.repo} ${worktree.branch}  host=${worktree.hostId ?? 'unverifiable'}  ${formatWorktreePsTerminalFields(worktree)}  unread:${worktree.unread ? 'yes' : 'no'}${formatTagsSuffix(worktree.tags, '  ')}\n${worktree.path}${worktree.preview ? `\npreview: ${worktree.preview}` : ''}`
     )
     .join('\n\n')
   const bodyWithScope = `${body}\n\n${scope}`
@@ -182,7 +194,7 @@ export function formatWorktreeList(
   const body = result.worktrees
     .map((worktree) => {
       const childCount = worktree.childWorktreeIds?.length ?? 0
-      return `${String(worktree.id)}  ${String(worktree.branch)}  host=${String(worktree.hostId ?? 'unverifiable')}  ${String(worktree.path)}\ndisplayName: ${String(worktree.displayName ?? '')}\nparentWorktreeId: ${String(worktree.parentWorktreeId ?? 'null')}\nchildWorktreeIds: ${childCount > 0 ? worktree.childWorktreeIds.join(',') : '[]'}\nlinkedIssue: ${String(worktree.linkedIssue ?? 'null')}\ncomment: ${String(worktree.comment ?? '')}`
+      return `${String(worktree.id)}  ${String(worktree.branch)}  host=${String(worktree.hostId ?? 'unverifiable')}  ${String(worktree.path)}\ndisplayName: ${String(worktree.displayName ?? '')}\nparentWorktreeId: ${String(worktree.parentWorktreeId ?? 'null')}\nchildWorktreeIds: ${childCount > 0 ? worktree.childWorktreeIds.join(',') : '[]'}\nlinkedIssue: ${String(worktree.linkedIssue ?? 'null')}\ncomment: ${String(worktree.comment ?? '')}${formatTagsSuffix(worktree.tags, '\n')}`
     })
     .join('\n\n')
   const bodyWithScope = `${body}\n\n${scope}`
@@ -194,9 +206,10 @@ export function formatWorktreeList(
 export function formatWorktreeShow(result: { worktree: RuntimeWorktreeRecord }): string {
   const worktree = result.worktree
   return Object.entries(worktree)
-    .map(
-      ([key, value]) =>
-        `${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`
+    .map(([key, value]) =>
+      key === 'tags' && Array.isArray(value)
+        ? `tags: ${value.join(', ')}`
+        : `${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`
     )
     .join('\n')
 }

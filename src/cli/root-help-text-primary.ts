@@ -77,6 +77,8 @@ export const ROOT_HELP_TEXT_PRIMARY = [
   '  worktree set              Update Orca metadata for a worktree',
   '  worktree rm               Remove a worktree from Orca and git',
   '  worktree ps               Show a compact orchestration summary across worktrees',
+  '  worktree tags             List workspace tags with color and count',
+  '  worktree tag-color        Set the color of a workspace tag',
   '',
   'Files:',
   '  file open                 Open a file as a tab, view stays put (--focus brings you to it)',
