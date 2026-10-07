@@ -1,6 +1,6 @@
 # Plan: workspace tags (fork feature)
 
-Status: in progress (slice 1 docs). Read with `GLOSSARY.md` (terms) and
+Status: implemented on branch ninhlv-9984/workspace-tags (pending PR). Read with `GLOSSARY.md` (terms) and
 `fork/adr/0001-workspace-tags-slim-patch-upstream-data-shape.md` (why this shape).
 Interactive wireframe the user approved (v5): https://claude.ai/artifact/SiUwMiPvSAQXV2gkpbvP61
 Upstream reference only (do NOT cherry-pick): stablyai/orca#22803 (spec), draft PR #22688.
