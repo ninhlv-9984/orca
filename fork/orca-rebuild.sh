@@ -42,9 +42,39 @@ echo "==> installing dependencies"
 pnpm install --frozen-lockfile
 (cd mobile && pnpm install --frozen-lockfile)
 
+echo "==> typechecking"
+pnpm tc
+
+# Tests of every file the fork commits touch: touched tests themselves, plus
+# the sibling foo.test.ts(x) / foo.*.test.ts(x) of each touched source file.
 echo "==> testing fork patches"
-pnpm exec vitest run --config config/vitest.config.ts \
-  src/main/ipc/filesystem-watcher-ignore src/main/updater
+mapfile -t touched < <(git diff --name-only "$new"..HEAD)
+declare -A seen=()
+tests=()
+add_test() {
+  [[ -f "$1" && -z "${seen[$1]:-}" ]] || return 0
+  seen[$1]=1
+  tests+=("$1")
+}
+for f in "${touched[@]}"; do
+  [[ "$f" == src/* && "$f" =~ \.tsx?$ && -f "$f" ]] || continue
+  if [[ "$f" =~ \.test\.tsx?$ ]]; then
+    add_test "$f"
+    continue
+  fi
+  base="${f%.*}" ext="${f##*.}"
+  shopt -s nullglob
+  for t in "$base.test.$ext" "$base".*.test.ts "$base".*.test.tsx; do
+    add_test "$t"
+  done
+  shopt -u nullglob
+done
+if ((${#tests[@]} == 0)); then
+  echo "orca-rebuild: no tests relate to fork-touched files; skipping."
+else
+  echo "    ${#tests[@]} test files"
+  pnpm exec vitest run --config config/vitest.config.ts "${tests[@]}"
+fi
 
 export NODE_OPTIONS="--max-old-space-size=4096"
 rm -rf dist
