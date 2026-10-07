@@ -82,6 +82,21 @@ describe('workspace tag colors', () => {
     expect(store.getState().persistedUIWriteBaseline).toBe(baseline)
   })
 
+  it('rolls the optimistic recolor back when ui.set fails', async () => {
+    const setUI = vi.fn().mockRejectedValue(new Error('offline'))
+    vi.stubGlobal('window', { api: { ui: { set: setUI } } })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const store = createUIStore()
+    store.getState().hydratePersistedUI(makePersistedUI({ worktreeTagColors: { api: 'rose' } }))
+
+    store.getState().setWorkspaceTagColor('api', 'violet')
+    expect(store.getState().worktreeTagColors).toEqual({ api: 'violet' })
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(store.getState().worktreeTagColors).toEqual({ api: 'rose' })
+  })
+
   it('shows colors assigned by a CLI agent when ui:stateChanged arrives', () => {
     let onStateChanged: ((ui: PersistedUIState) => void) | undefined
     const noop = (): void => {}

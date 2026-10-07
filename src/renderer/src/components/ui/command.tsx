@@ -9,13 +9,13 @@ import { Dialog as DialogPrimitive } from 'radix-ui'
 import { cn } from '@/lib/utils'
 
 /** `menu` is the compact look of a search panel embedded in a dropdown submenu (Projects, Tags). */
-type CommandVariantProps = { variant?: 'default' | 'menu' }
+type MenuVariant = { variant?: 'default' | 'menu' }
 
 function Command({
   className,
-  variant = 'default',
+  variant,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive> & CommandVariantProps) {
+}: React.ComponentProps<typeof CommandPrimitive> & MenuVariant) {
   return (
     <CommandPrimitive
       data-slot="command"
@@ -102,11 +102,11 @@ function CommandInput({
   wrapperClassName,
   iconClassName,
   trailing,
-  variant = 'default',
+  variant,
   ref,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input> &
-  CommandVariantProps & {
+  MenuVariant & {
     wrapperClassName?: string
     iconClassName?: string
     /** Rendered after the field, inside the input frame (e.g. a filter control). */
@@ -145,10 +145,10 @@ function CommandInput({
 
 function CommandList({
   className,
-  variant = 'default',
+  variant,
   ref,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.List> & CommandVariantProps) {
+}: React.ComponentProps<typeof CommandPrimitive.List> & MenuVariant) {
   const internalRef = React.useRef<HTMLDivElement>(null)
 
   // Why: Radix Dialog applies react-remove-scroll which calls preventDefault()
@@ -201,9 +201,9 @@ function CommandList({
 
 function CommandEmpty({
   className,
-  variant = 'default',
+  variant,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Empty> & CommandVariantProps) {
+}: React.ComponentProps<typeof CommandPrimitive.Empty> & MenuVariant) {
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
@@ -241,12 +241,12 @@ const commandItemVariants = cva('', {
 function CommandItem({
   className,
   selection,
-  variant = 'default',
+  variant,
   ref,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Item> &
   VariantProps<typeof commandItemVariants> &
-  CommandVariantProps) {
+  MenuVariant) {
   return (
     <CommandPrimitive.Item
       ref={ref}

@@ -4,9 +4,13 @@ import {
   computeVisibleWorktreeIds,
   sidebarHasActiveFilters
 } from './visible-worktrees'
-import { filterFolderWorkspacesByTags, pruneVanishedFilterTags } from './workspace-tag-filter'
+import { filterFolderWorkspacesByTags } from './workspace-tag-filter'
 import { collectWorkspaceTagCatalog } from './workspace-tag-catalog'
-import { resolveWorkspaceTagSubmit, toggleWorkspaceTag } from './worktree-tag-menu-logic'
+import {
+  filterTagsToDropAfterRemoval,
+  resolveWorkspaceTagSubmit,
+  toggleWorkspaceTag
+} from './worktree-tag-menu-logic'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import type { FolderWorkspace } from '../../../../shared/folder-workspace-types'
 import type { Repo } from '../../../../shared/repo-types'
@@ -143,16 +147,14 @@ describe('filterFolderWorkspacesByTags', () => {
   })
 })
 
-describe('pruneVanishedFilterTags', () => {
-  it('drops tags that were known and have disappeared', () => {
-    expect(
-      pruneVanishedFilterTags(['Api', 'web'], new Set(['api', 'web']), new Set(['web']))
-    ).toEqual(['web'])
-  })
-
-  it('keeps tags it has never seen, so a persisted filter survives startup', () => {
-    const filter = ['api']
-    expect(pruneVanishedFilterTags(filter, new Set(), new Set())).toBe(filter)
+describe('filterTagsToDropAfterRemoval', () => {
+  it('drops a filter tag removed from its last carrier only', () => {
+    const counts = new Map([
+      ['api', 1],
+      ['web', 2]
+    ])
+    expect(filterTagsToDropAfterRemoval(['Api', 'web'], ['API', 'web'], counts)).toEqual(['Api'])
+    expect(filterTagsToDropAfterRemoval(['web'], ['api'], counts)).toEqual([])
   })
 })
 

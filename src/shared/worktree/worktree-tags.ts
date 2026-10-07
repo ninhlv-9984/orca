@@ -17,7 +17,12 @@ export type WorkspaceTagColorId = (typeof WORKSPACE_TAG_COLOR_IDS)[number]
 /** Lowercase tag name -> color id. Keyed by name so a color outlives the last workspace carrying it. */
 export type WorkspaceTagColors = Record<string, WorkspaceTagColorId>
 
-export type WorkspaceTagValidation = { ok: true; tag: string } | { ok: false; error: string }
+export type WorkspaceTagErrorCode = 'not-string' | 'empty' | 'control' | 'comma' | 'too-long'
+
+/** `error` is the English message for CLI/main; `code` lets the renderer localize it. */
+export type WorkspaceTagValidation =
+  | { ok: true; tag: string }
+  | { ok: false; error: string; code: WorkspaceTagErrorCode }
 
 export function workspaceTagKey(tag: string): string {
   return tag.toLowerCase()
@@ -25,23 +30,24 @@ export function workspaceTagKey(tag: string): string {
 
 export function validateWorkspaceTag(raw: unknown): WorkspaceTagValidation {
   if (typeof raw !== 'string') {
-    return { ok: false, error: 'Tag must be a string.' }
+    return { ok: false, error: 'Tag must be a string.', code: 'not-string' }
   }
   const tag = raw.trim()
   if (tag.length === 0) {
-    return { ok: false, error: 'Tag must not be empty.' }
+    return { ok: false, error: 'Tag must not be empty.', code: 'empty' }
   }
   // eslint-disable-next-line no-control-regex -- control characters (incl. NUL) are never valid in a tag
   if (/[\u0000-\u001f\u007f]/.test(tag)) {
-    return { ok: false, error: 'Tag must not contain control characters.' }
+    return { ok: false, error: 'Tag must not contain control characters.', code: 'control' }
   }
   if (tag.includes(',')) {
-    return { ok: false, error: `Tag "${tag}" must not contain commas.` }
+    return { ok: false, error: `Tag "${tag}" must not contain commas.`, code: 'comma' }
   }
   if (tag.length > MAX_WORKSPACE_TAG_LENGTH) {
     return {
       ok: false,
-      error: `Tag "${tag}" is longer than ${MAX_WORKSPACE_TAG_LENGTH} characters.`
+      error: `Tag "${tag}" is longer than ${MAX_WORKSPACE_TAG_LENGTH} characters.`,
+      code: 'too-long'
     }
   }
   return { ok: true, tag }
