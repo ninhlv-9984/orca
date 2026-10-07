@@ -20,6 +20,7 @@ import {
   DEFAULT_STATUS_BAR_USAGE_MODE,
   normalizeStatusBarUsageMode
 } from '../../../../../shared/status-bar-usage-mode'
+import { createWorkspaceTagActions } from './ui-slice-tag-actions'
 import type { WorkspaceHostScope } from '../../../../../shared/ui-chrome-types'
 import {
   normalizeExecutionHostOrder,
@@ -166,6 +167,7 @@ export function createUiPreferenceActions(set: UISliceSet, get: UISliceGet): Par
 
     filterRepoIds: [],
     setFilterRepoIds: (ids) => set({ filterRepoIds: ids }),
+    ...createWorkspaceTagActions(set),
 
     agentsVisibleHostIds: null,
     setAgentsVisibleHostIds: (ids) => {

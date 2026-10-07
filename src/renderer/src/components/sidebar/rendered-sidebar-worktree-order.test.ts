@@ -297,4 +297,34 @@ describe('closed-sidebar Cmd+1-9 ordering (#9497)', () => {
       { id: 'repo1::/same', executionHostId: 'local' }
     ])
   })
+
+  it('applies the tag filter (OR, case-insensitive) to shortcut numbering, pinned included', () => {
+    const group = makeProjectGroup('group-1')
+    seedStore(
+      [
+        makeWorktree('wt-api', { tags: ['API'] }),
+        makeWorktree('wt-pinned-untagged', { isPinned: true }),
+        makeWorktree('wt-web', { tags: ['web', 'other'] }),
+        makeWorktree('wt-none')
+      ],
+      {
+        projectGroups: [group],
+        folderWorkspaces: [
+          { ...makeFolderWorkspace('fw-tagged', group.id), tags: ['Api'] },
+          makeFolderWorkspace('fw-untagged', group.id)
+        ],
+        filterTags: ['api', 'WEB']
+      }
+    )
+
+    const ids = getVisibleWorktreeIds()
+
+    expect(ids).toEqual(
+      expect.arrayContaining(['wt-api', 'wt-web', folderWorkspaceKey('fw-tagged')])
+    )
+    expect(ids).not.toContain('wt-pinned-untagged')
+    expect(ids).not.toContain('wt-none')
+    expect(ids).not.toContain(folderWorkspaceKey('fw-untagged'))
+    expect(getVisibleWorktreeShortcutTargets().map((target) => target.id)).toEqual(ids)
+  })
 })

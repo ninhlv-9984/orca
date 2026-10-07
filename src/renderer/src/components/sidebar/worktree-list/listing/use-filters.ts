@@ -10,6 +10,7 @@ import {
   isSleepingSweepExemptWorkspace
 } from '../../visible-worktrees'
 import type { Worktree } from '../../../../../../shared/worktree/types'
+import { matchesWorkspaceTagFilter } from '../../../../../../shared/worktree/worktree-tags'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import {
   getWorktreeExecutionHostId,
@@ -35,6 +36,7 @@ export type SidebarWorktreeFilters = ReturnType<typeof useSidebarWorktreeFilters
 export function useSidebarWorktreeFilters() {
   const showSleepingWorkspaces = useAppStore((s) => s.showSleepingWorkspaces)
   const filterRepoIds = useAppStore((s) => s.filterRepoIds)
+  const filterTags = useAppStore((s) => s.filterTags)
   const hideDefaultBranchWorkspace = useAppStore((s) => s.hideDefaultBranchWorkspace)
   const hideAutomationGeneratedWorkspaces = useAppStore((s) => s.hideAutomationGeneratedWorkspaces)
   const hideCliCreatedWorkspaces = useAppStore((s) => s.hideCliCreatedWorkspaces)
@@ -56,6 +58,7 @@ export function useSidebarWorktreeFilters() {
     (s) => s.setAlwaysShowDefaultBranchWorkspace
   )
   const setFilterRepoIds = useAppStore((s) => s.setFilterRepoIds)
+  const setFilterTags = useAppStore((s) => s.setFilterTags)
   const setVisibleWorkspaceHostIds = useAppStore((s) => s.setVisibleWorkspaceHostIds)
 
   const revealWorkspaceFilters = useCallback((worktree: Worktree) => {
@@ -89,6 +92,10 @@ export function useSidebarWorktreeFilters() {
       !state.filterRepoIds.includes(worktree.repoId)
     ) {
       state.setFilterRepoIds([...state.filterRepoIds, worktree.repoId])
+    }
+    // Why: a tag filter has no "add this workspace" step like repos do (an untagged workspace can't match), so reveal clears it.
+    if (!matchesWorkspaceTagFilter(worktree.tags, state.filterTags)) {
+      state.setFilterTags([])
     }
     const visibleHostIds = state.visibleWorkspaceHostIds
     const scopedHostIds =
@@ -148,6 +155,7 @@ export function useSidebarWorktreeFilters() {
     () => ({
       showSleepingWorkspaces,
       filterRepoIds,
+      filterTags,
       hideDefaultBranchWorkspace,
       hideAutomationGeneratedWorkspaces,
       hideCliCreatedWorkspaces,
@@ -160,6 +168,7 @@ export function useSidebarWorktreeFilters() {
     [
       showSleepingWorkspaces,
       filterRepoIds,
+      filterTags,
       hideDefaultBranchWorkspace,
       hideAutomationGeneratedWorkspaces,
       hideCliCreatedWorkspaces,
@@ -178,6 +187,9 @@ export function useSidebarWorktreeFilters() {
     }
     if (actions.resetFilterRepoIds) {
       setFilterRepoIds([])
+    }
+    if (actions.resetFilterTags) {
+      setFilterTags([])
     }
     if (actions.resetHideDefaultBranchWorkspace) {
       setHideDefaultBranchWorkspace(false)
@@ -203,6 +215,7 @@ export function useSidebarWorktreeFilters() {
   }, [
     setShowSleepingWorkspaces,
     setFilterRepoIds,
+    setFilterTags,
     setHideDefaultBranchWorkspace,
     setHideAutomationGeneratedWorkspaces,
     setHideCliCreatedWorkspaces,

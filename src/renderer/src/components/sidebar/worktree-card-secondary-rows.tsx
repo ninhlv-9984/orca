@@ -7,6 +7,7 @@ import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import { LinearAgentSkillSetupPrompt } from './LinearAgentSkillSetupPrompt'
 import WorktreeCardAgents from './WorktreeCardAgents'
+import { WorktreeCardTags } from './WorktreeCardTags'
 import type { WorktreeCardPresentation } from './worktree-card-presentation'
 import type { WorktreeCardController } from './use-worktree-card-controller'
 
@@ -35,7 +36,7 @@ export function WorktreeCardSecondaryRows({
     childWorkspaceShortLabel,
     isDeleting
   } = card
-  const { hasMetaRow } = presentation
+  const { hasMetaRow, showTags } = presentation
 
   return (
     <>
@@ -85,12 +86,14 @@ export function WorktreeCardSecondaryRows({
         />
       ) : null}
 
+      {showTags && <WorktreeCardTags tags={worktree.tags ?? []} className="mt-0.5" />}
+
       {/* Why: counterbalance the card stack gap (-mt-1) so agents right after the title read as one header group. */}
       {showInlineAgentList && (
         <WorktreeCardAgents
           worktreeId={worktree.id}
           agents={agentActivityDisplayMode === 'compact' ? compactInlineAgentRows : undefined}
-          className={hasMetaRow || remoteBranchConflict ? 'mt-0' : '-mt-1'}
+          className={hasMetaRow || remoteBranchConflict || showTags ? 'mt-0' : '-mt-1'}
         />
       )}
 

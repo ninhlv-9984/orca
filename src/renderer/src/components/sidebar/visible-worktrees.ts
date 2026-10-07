@@ -22,6 +22,7 @@ import {
   worktreeMatchesVisibleHost
 } from './visible-worktree-host-scope'
 import type { Worktree } from '../../../../shared/worktree/types'
+import { matchesWorkspaceTagFilter } from '../../../../shared/worktree/worktree-tags'
 import { buildWorktreeComparator, sortWorktreesSmart } from './smart-sort'
 import { isInactiveWorkspace } from '@/lib/worktree-activity-state'
 export {
@@ -66,6 +67,8 @@ import { getWorktreeHostIdentity } from '../../../../shared/worktree/host-qualif
  */
 export type VisibleWorktreeOptions = {
   filterRepoIds: readonly string[]
+  /** Workspace tag filter (OR, case-insensitive); pinned workspaces are not exempt. */
+  filterTags?: readonly string[]
   showSleepingWorkspaces: boolean
   tabsByWorktree: Record<string, Pick<TerminalTab, 'id'>[]> | null
   ptyIdsByTabId: Record<string, string[]> | null
@@ -143,6 +146,11 @@ export function computeVisibleWorktrees(
   if (opts.filterRepoIds.length > 0) {
     const selectedRepoIds = new Set(opts.filterRepoIds)
     all = all.filter((w) => selectedRepoIds.has(w.repoId))
+  }
+
+  if (opts.filterTags && opts.filterTags.length > 0) {
+    const filterTags = opts.filterTags
+    all = all.filter((w) => matchesWorkspaceTagFilter(w.tags, filterTags))
   }
 
   if (!opts.showSleepingWorkspaces) {

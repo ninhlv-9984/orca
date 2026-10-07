@@ -8,12 +8,20 @@ import { Dialog as DialogPrimitive } from 'radix-ui'
 
 import { cn } from '@/lib/utils'
 
-function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
+/** `menu` is the compact look of a search panel embedded in a dropdown submenu (Projects, Tags). */
+type CommandVariantProps = { variant?: 'default' | 'menu' }
+
+function Command({
+  className,
+  variant = 'default',
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive> & CommandVariantProps) {
   return (
     <CommandPrimitive
       data-slot="command"
       className={cn(
         'flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground',
+        variant === 'menu' && 'bg-transparent',
         className
       )}
       {...props}
@@ -94,28 +102,38 @@ function CommandInput({
   wrapperClassName,
   iconClassName,
   trailing,
+  variant = 'default',
   ref,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input> & {
-  wrapperClassName?: string
-  iconClassName?: string
-  /** Rendered after the field, inside the input frame (e.g. a filter control). */
-  trailing?: React.ReactNode
-}) {
+}: React.ComponentProps<typeof CommandPrimitive.Input> &
+  CommandVariantProps & {
+    wrapperClassName?: string
+    iconClassName?: string
+    /** Rendered after the field, inside the input frame (e.g. a filter control). */
+    trailing?: React.ReactNode
+  }) {
   return (
     <div
       className={cn(
         'flex items-center border-b border-border bg-muted/30 px-3 py-1',
+        variant === 'menu' && 'mx-1 rounded-[7px] border border-border/70 px-2',
         wrapperClassName
       )}
       data-cmdk-input-wrapper=""
     >
-      <SearchIcon className={cn('mr-2 h-4 w-4 shrink-0 opacity-50', iconClassName)} />
+      <SearchIcon
+        className={cn(
+          'mr-2 h-4 w-4 shrink-0 opacity-50',
+          variant === 'menu' && 'h-3.5 w-3.5',
+          iconClassName
+        )}
+      />
       <CommandPrimitive.Input
         ref={ref}
         data-slot="command-input"
         className={cn(
           'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
+          variant === 'menu' && 'h-8 py-2 text-xs',
           className
         )}
         {...props}
@@ -127,9 +145,10 @@ function CommandInput({
 
 function CommandList({
   className,
+  variant = 'default',
   ref,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.List>) {
+}: React.ComponentProps<typeof CommandPrimitive.List> & CommandVariantProps) {
   const internalRef = React.useRef<HTMLDivElement>(null)
 
   // Why: Radix Dialog applies react-remove-scroll which calls preventDefault()
@@ -172,6 +191,7 @@ function CommandList({
       data-slot="command-list"
       className={cn(
         'max-h-[min(400px,60vh)] overflow-y-auto overflow-x-hidden scrollbar-sleek scroll-pb-4 scroll-pt-4',
+        variant === 'menu' && 'py-1',
         className
       )}
       {...props}
@@ -181,12 +201,17 @@ function CommandList({
 
 function CommandEmpty({
   className,
+  variant = 'default',
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Empty>) {
+}: React.ComponentProps<typeof CommandPrimitive.Empty> & CommandVariantProps) {
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
-      className={cn('py-6 text-center text-sm text-muted-foreground', className)}
+      className={cn(
+        'py-6 text-center text-sm text-muted-foreground',
+        variant === 'menu' && 'py-4 text-[11px]',
+        className
+      )}
       {...props}
     />
   )
@@ -216,9 +241,12 @@ const commandItemVariants = cva('', {
 function CommandItem({
   className,
   selection,
+  variant = 'default',
   ref,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Item> & VariantProps<typeof commandItemVariants>) {
+}: React.ComponentProps<typeof CommandPrimitive.Item> &
+  VariantProps<typeof commandItemVariants> &
+  CommandVariantProps) {
   return (
     <CommandPrimitive.Item
       ref={ref}
@@ -226,6 +254,8 @@ function CommandItem({
       className={cn(
         'relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
         commandItemVariants({ selection }),
+        variant === 'menu' &&
+          'mx-1 my-0.5 items-center gap-2 rounded-[7px] px-2 py-1 text-[12px] leading-5 font-medium data-[selected=true]:bg-black/8 dark:data-[selected=true]:bg-white/14',
         className
       )}
       {...props}

@@ -5640,7 +5640,8 @@
           "219ebf1961": "Branch name",
           "folderPathIdentity": "Branch / folder path",
           "cli": "Orca CLI",
-          "workspaceOptions": "Workspace options"
+          "workspaceOptions": "Workspace options",
+          "tags": "Tags"
         },
         "SshTargetRow": {
           "4677394048": "Connecting…",
@@ -6503,6 +6504,23 @@
           "copied": "Command copied",
           "retry": "Retry now",
           "restored": "Git is working again. Worktrees refreshed."
+        },
+        "SidebarTagFilterSection": {
+          "addTagPlaceholder": "Add tag...",
+          "filterTagsPlaceholder": "Filter tags...",
+          "noUnselectedTags": "No unselected tags match",
+          "noTags": "No tags match",
+          "allTags": "All tags",
+          "selectedTagsCount": "{{value0}} tags"
+        },
+        "WorkspaceTags": {
+          "matchingCountTitle": "Workspaces with these tags / all workspaces"
+        },
+        "WorktreeTagMenuItems": {
+          "searchOrCreate": "Search or create tag...",
+          "createTag": "Create \"{{value0}}\"",
+          "changeColor": "Change {{value0}} color",
+          "setColor": "Set {{value0}} color to {{value1}}"
         }
       },
       "shared": {

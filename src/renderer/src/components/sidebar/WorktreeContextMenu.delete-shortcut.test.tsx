@@ -99,6 +99,10 @@ const defaultStoreState = {
   ptyIdsByTabId: {},
   browserTabsByWorktree: {},
   worktreesByRepo: {},
+  folderWorkspaces: [],
+  filterTags: [],
+  worktreeTagColors: {},
+  setWorkspaceTagColor: vi.fn(),
   repos: []
 }
 

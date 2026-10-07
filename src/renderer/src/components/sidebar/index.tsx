@@ -6,6 +6,7 @@ import SidebarHeader from './SidebarHeader'
 import SidebarNav from './SidebarNav'
 import SetupScriptPromptCard from './SetupScriptPromptCard'
 import WorktreeList from './WorktreeList'
+import { WorkspaceTagFilterStrip } from './WorkspaceTagFilterStrip'
 import SidebarToolbar from './SidebarToolbar'
 import WorkspaceKanbanDrawer from './WorkspaceKanbanDrawer'
 import type { VirtualizedScrollAnchor } from '@/hooks/useVirtualizedScrollAnchor'
@@ -183,6 +184,7 @@ function Sidebar({
               </React.Suspense>
             ) : (
               <>
+                <WorkspaceTagFilterStrip />
                 <LocalGitToolchainScanBanner />
                 <WorktreeList
                   scrollOffsetRef={worktreeScrollOffsetRef}
