@@ -38,6 +38,17 @@ describe('listRuntimeWorkspaceTags', () => {
   })
 })
 
+describe('listRuntimeWorkspaceTags without UI state', () => {
+  it('still lists tags, with no color', () => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: partial fake of the store members read here.
+    const store = {
+      getAllWorktreeMeta: () => ({ a: { tags: ['api'] } }),
+      getFolderWorkspaces: () => []
+    } as unknown as RuntimeStore
+    expect(listRuntimeWorkspaceTags(store)).toEqual([{ name: 'api', count: 1 }])
+  })
+})
+
 describe('setRuntimeWorkspaceTagColor', () => {
   it('stores the color under the lowercase name', () => {
     const store = makeStore()

@@ -21,7 +21,7 @@ to the tags they are working on, and let agents list/set tags from the CLI.
 - **Assigning tags in UI**: right-click a workspace → new **Tags ›** submenu right after **Status ›** (same submenu style): search-or-create input, checkbox per tag, a color dot per tag that opens the 6 swatches. Works on the single right-clicked workspace (multi-select is a nice-to-have, skip if costly).
 - **Card chips**: tags render as small colored chips on the workspace card, toggled by a new Card display property (default on).
 - **Inheritance**: a workspace created with a parent (`--parent-worktree` / lineage) copies the parent's tags.
-- **Agent API**: `orca worktree set --worktree <sel> --tag X` (repeatable) / `--untag X` (repeatable) / `--tags a,b|null` (replace / clear); `orca worktree tags` (list name, color, count); `orca worktree ps --tag X` (repeatable, OR); `orca worktree tag-color <tag> <color>`. `--tag/--untag` are applied host-side (add/remove), so concurrent agents don't overwrite each other.
+- **Agent API**: `orca worktree set --worktree <sel> --tag X` (repeatable) / `--untag X` (repeatable) / `--tags a,b|null` (replace / clear); `orca worktree tags` (list name, color, count); `orca worktree ps --tag X` (repeatable, OR); `orca worktree tag-color --tag X --color Y`. `--tag/--untag` are applied host-side (add/remove), so concurrent agents don't overwrite each other.
 - Out of scope: Group by Tag, tag rename/delete UI, mobile UI, `worktree.tags.v1` capability negotiation, remote/SSH-specific work beyond what the existing meta paths already carry.
 
 ## Code map (verified 2026-10-07 on v1.4.221; re-check line numbers)

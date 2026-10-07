@@ -38,7 +38,8 @@ export type WorktreeLineageRecordingResolution =
 
 export function recordCreatedWorktreeLineage(
   store: RuntimeStore | null,
-  worktree: Pick<Worktree, 'id' | 'instanceId'>,
+  // Why mutated: callers project the create result before this runs, and it must carry inherited tags.
+  worktree: Pick<Worktree, 'id' | 'instanceId' | 'tags'>,
   resolution: WorktreeLineageRecordingResolution
 ): {
   lineage: WorktreeLineage | null
@@ -52,14 +53,17 @@ export function recordCreatedWorktreeLineage(
     return { lineage, workspaceLineage, warnings }
   }
 
-  if (store) {
-    inheritWorkspaceTags(
-      store,
-      worktree.id,
-      resolution.parent.type === 'folder'
-        ? resolution.parent.folderWorkspace.tags
-        : store.getWorktreeMeta(resolution.parent.worktree.id)?.tags
-    )
+  const tags = store
+    ? inheritWorkspaceTags(
+        store,
+        worktree.id,
+        resolution.parent.type === 'folder'
+          ? resolution.parent.folderWorkspace.tags
+          : store.getWorktreeMeta(resolution.parent.worktree.id)?.tags
+      )
+    : undefined
+  if (tags) {
+    worktree.tags = tags
   }
   const childInstanceId = worktree.instanceId
   const parentInstanceId = resolution.parent.instanceId

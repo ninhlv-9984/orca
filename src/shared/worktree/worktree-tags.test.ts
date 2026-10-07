@@ -22,6 +22,15 @@ describe('workspace tag rules', () => {
     expect(normalizeWorkspaceTag(7)).toBeNull()
   })
 
+  it('rejects control characters including NUL', () => {
+    expect(normalizeWorkspaceTag('a\u0000b')).toBeNull()
+    expect(normalizeWorkspaceTag('a\nb')).toBeNull()
+    expect(validateWorkspaceTag('a\u0000b')).toEqual({
+      ok: false,
+      error: expect.stringContaining('control')
+    })
+  })
+
   it('explains why a tag is invalid', () => {
     expect(validateWorkspaceTag('a,b')).toEqual({
       ok: false,

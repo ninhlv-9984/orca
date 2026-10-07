@@ -137,7 +137,7 @@ import {
   retireGeneratedWorktreeName
 } from '../worktree-name-retirement'
 import { createRetiredNameLookup } from '../../shared/worktree/retired-name-registry'
-import { inheritWorkspaceTags } from '../worktree-tags'
+import { inheritWorkspaceTags, withStoredWorkspaceTags } from '../worktree-tags'
 import { findPendingWorktreeRemovalConflict } from '../worktree-removal-table'
 // Why: bound the fallback `git fetch origin` so a Windows credential-manager GUI hang (STA-1292) can't wedge worktree creation forever.
 const CREATE_BASE_FALLBACK_FETCH_TIMEOUT_MS = 60_000
@@ -1576,16 +1576,18 @@ async function performLocalWorktreeCreate(
       : {}),
     ...(args.workspaceStatus !== undefined ? { workspaceStatus: args.workspaceStatus } : {})
   }
-  const { worktree } = timing.timeSync('persist_metadata', () => {
+  const { worktree: persistedWorktree } = timing.timeSync('persist_metadata', () => {
     const meta = store.setWorktreeMeta(worktreeId, metaUpdates)
     return { worktree: mergeWorktree(repo.id, created, meta) }
   })
   const { lineage: worktreeLineage, workspaceLineage } = recordWorkspaceLineageForCreatedWorktree(
     store,
     args,
-    worktree,
+    persistedWorktree,
     now
   )
+  // Why: lineage recording inherits the parent's tags after the projection above.
+  const worktree = withStoredWorkspaceTags(store, persistedWorktree)
   // Why: reuse the roots creation already paid for via `git worktree list` so later IPC doesn't lazily rescan and trip macOS privacy prompts.
   // Why gated: registration replaces the repo's root set, so registering a create recovered without
   // a listing would revoke filesystem access to every worktree that listing would have named.
