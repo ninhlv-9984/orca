@@ -128,4 +128,21 @@ describe('worktree.ps host coverage', () => {
     )
     expect(result.hostScope?.hostIds).toEqual(['local', `ssh:${SSH_CONNECTION_ID}`])
   })
+
+  it('filters by tag (any-of, case-insensitive) before applying the cap', async () => {
+    const store = makeStore()
+    store.setWorktreeMeta(`${LOCAL_REPO_ID}::${LOCAL_REPO_PATH}-a`, { tags: ['Api'] })
+    store.setWorktreeMeta(`${SSH_REPO_ID}::${SSH_REPO_PATH}-a`, { tags: ['web'] })
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: partial fake store, as in the sibling tests.
+    const runtime = new OrcaRuntimeService(store as never)
+
+    const one = await runtime.getWorktreePs(1, true, ['API'])
+    expect(one.worktrees.map((worktree) => worktree.path)).toEqual([`${LOCAL_REPO_PATH}-a`])
+    expect(one.worktrees[0]?.tags).toEqual(['Api'])
+
+    const both = await runtime.getWorktreePs(10, true, ['api', 'WEB'])
+    expect(both.totalCount).toBe(2)
+    expect((await runtime.getWorktreePs(10, true, ['nope'])).worktrees).toEqual([])
+    expect((await runtime.getWorktreePs(10)).totalCount).toBe(6)
+  })
 })

@@ -22,7 +22,7 @@ const GLOBAL_VALUE_FLAGS = new Set(CLI_GLOBAL_VALUE_FLAGS)
 export const BOOLEAN_FLAGS = CLI_BOOLEAN_FLAGS
 
 export const REPEATED_FLAG_SEPARATOR = '\u0000'
-const REPEATABLE_STRING_FLAGS = new Set(['label', 'skill'])
+const REPEATABLE_STRING_FLAGS = new Set(['label', 'skill', 'tag', 'untag'])
 
 function setFlagValue(
   flags: Map<string, string | boolean>,

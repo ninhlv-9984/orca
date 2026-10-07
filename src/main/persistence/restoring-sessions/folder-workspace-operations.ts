@@ -7,6 +7,7 @@ import { getNextProjectGroupOrder } from '../../../shared/project-groups'
 import { normalizeStoredTaskSourceContext } from '../../../shared/task-source-context'
 import { normalizeWorkspaceLinkedItem } from '../../../shared/workspace-linked-item'
 import { isWorkspaceLinkedItemSourceContextMatch } from '../../../shared/workspace-linked-item-source-context'
+import { normalizeWorkspaceTags } from '../../../shared/worktree/worktree-tags'
 import { folderWorkspaceKey } from '../../../shared/workspace-scope'
 import { removeWorkspaceSessionOwnerEverywhere } from './session-owner-removal'
 
@@ -121,6 +122,7 @@ export class FolderWorkspacePersistenceOperations {
         | 'sortOrder'
         | 'manualOrder'
         | 'workspaceStatus'
+        | 'tags'
         | 'createdWithAgent'
         | 'pendingFirstAgentMessageRename'
         | 'firstAgentMessageRenameError'
@@ -186,6 +188,14 @@ export class FolderWorkspacePersistenceOperations {
     }
     if (updates.workspaceStatus !== undefined) {
       workspace.workspaceStatus = updates.workspaceStatus
+    }
+    if (updates.tags !== undefined) {
+      const tags = normalizeWorkspaceTags(updates.tags)
+      if (tags) {
+        workspace.tags = tags
+      } else {
+        delete workspace.tags
+      }
     }
     if (updates.createdWithAgent !== undefined) {
       workspace.createdWithAgent = updates.createdWithAgent

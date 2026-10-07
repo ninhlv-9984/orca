@@ -8,6 +8,7 @@ import type {
   ListDesktopLineageForHostArgs,
   HostLineageSnapshot
 } from '../../../../shared/host-lineage-contract'
+import { ensureWorkspaceTagColors } from '../../../worktree-tags'
 import { notifyWorktreesChanged } from '../../worktree-remote'
 import { parseWorktreeId } from '../../worktree-logic'
 import { planWorktreeSortOrderUpdates } from '../../../../shared/worktree/sort-order-update'
@@ -50,6 +51,7 @@ export function registerWorktreeMetadataHandlers(context: WorktreeIpcContext): v
       const meta = executionHostId
         ? store.setWorktreeMetaForHost(args.worktreeId, executionHostId, sanitizedUpdates)
         : store.setWorktreeMeta(args.worktreeId, sanitizedUpdates)
+      ensureWorkspaceTagColors(store, meta.tags)
       // Do NOT notify here: renderer already applied this optimistically; a notification would re-sort the sidebar (bug PR #209).
       if (args.updates.displayName !== undefined) {
         // Why: remote clients have no optimistic rename and stopped polling titles, so push a remote-only invalidation; gate on displayName so per-click isUnread updates stay event-free.

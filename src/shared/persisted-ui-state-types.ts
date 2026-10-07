@@ -24,6 +24,7 @@ import type {
   WorktreeCardProperty
 } from './ui-chrome-types'
 import type { WorkspaceStatusDefinition } from './worktree/types'
+import type { WorkspaceTagColorId } from './worktree/worktree-tags'
 import type { PersistedAutomationHostFilter } from './automation-host-filter'
 
 export type PersistedUIState = {
@@ -76,6 +77,8 @@ export type PersistedUIState = {
   _explorerDisplayRootMigrated?: boolean
   explorerDisplayRootByWorktree?: Record<string, string>
   showDotfilesByWorktree?: Record<string, boolean>
+  /** Workspace tag colors keyed by lowercase tag name; assigned by main, merged (never pruned) on write. */
+  worktreeTagColors?: Record<string, WorkspaceTagColorId>
   filterRepoIds: string[]
   /** Agents-view host scope; deliberately separate from visibleWorkspaceHostIds so a monitoring surface never inherits nav filters silently. `null` = all hosts. */
   agentsVisibleHostIds?: VisibleWorkspaceHostIds

@@ -4,6 +4,7 @@ import { isTuiAgent } from './tui-agent-config'
 import { normalizeStoredTaskSourceContext } from './task-source-context'
 import { normalizeWorkspaceLinkedItem } from './workspace-linked-item'
 import { isWorkspaceLinkedItemSourceContextMatch } from './workspace-linked-item-source-context'
+import { normalizeWorkspaceTags } from './worktree/worktree-tags'
 import { normalizeWorkspaceCreatorProvenance } from './workspace-creator-provenance'
 
 export function normalizeFolderWorkspaceName(
@@ -56,6 +57,7 @@ export function normalizeFolderWorkspaces(
     const linkedTask = normalizeWorkspaceLinkedItem(raw.linkedTask)
     const linkedTaskSourceContext = normalizeStoredTaskSourceContext(raw.linkedTaskSourceContext)
     const creatorProvenance = normalizeWorkspaceCreatorProvenance(raw.creatorProvenance)
+    const tags = normalizeWorkspaceTags(raw.tags)
     seen.add(raw.id)
     // Why: `executionHostId` is deliberately NOT persisted. It is a fetch-time renderer
     // stamp that can name a `runtime:*` authority the desktop store does not own, and it
@@ -91,6 +93,7 @@ export function normalizeFolderWorkspaces(
       ...(typeof raw.workspaceStatus === 'string' && raw.workspaceStatus.trim().length > 0
         ? { workspaceStatus: raw.workspaceStatus }
         : {}),
+      ...(tags ? { tags } : {}),
       ...(isTuiAgent(raw.createdWithAgent) ? { createdWithAgent: raw.createdWithAgent } : {}),
       ...(raw.pendingFirstAgentMessageRename === true
         ? { pendingFirstAgentMessageRename: true }

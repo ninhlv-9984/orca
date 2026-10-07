@@ -5,6 +5,7 @@ import {
   normalizeWorktreeCardProperties
 } from '../worktree/card-properties'
 import { isPluginPanelTabKey } from '../plugins/plugin-manifest'
+import { WORKSPACE_TAG_COLOR_IDS } from '../worktree/worktree-tags'
 import { isFeatureInteractionId } from '../feature-interactions'
 import type { FeatureInteractionId } from '../feature-interactions'
 import { ACTIVITY_GROUP_BY_VALUES, THREAD_READ_FILTER_VALUES } from '../agents-view-thread-filters'
@@ -165,6 +166,7 @@ export const UiUpdateFields = z
     // payload (sidebar widths, filters, agent acks) for every paired client.
     explorerDisplayRootByWorktree: z.record(z.string(), z.string()).optional(),
     showDotfilesByWorktree: z.record(z.string(), z.boolean()).optional(),
+    worktreeTagColors: z.record(z.string(), z.enum(WORKSPACE_TAG_COLOR_IDS)).optional(),
     collapsedGroups: StringArray.optional(),
     uiZoomLevel: z.number().finite().optional(),
     editorFontZoomLevel: z.number().finite().optional(),

@@ -28,7 +28,17 @@ const COMMAND_SCOPED_FLAG_HELP: Record<string, Record<string, string>> = {
   },
   'worktree set': {
     unread: '--unread               Mark the workspace unread in the sidebar',
-    read: '--read                 Mark the workspace read, clearing the unread dot'
+    read: '--read                 Mark the workspace read, clearing the unread dot',
+    tag: '--tag <name>           Add a tag (repeatable; applied against the current tags)',
+    untag: '--untag <name>         Remove a tag (repeatable; user tags stay unless asked)',
+    tags: '--tags <a,b|null>      Replace all tags with a comma-separated list; null clears them'
+  },
+  'worktree ps': {
+    tag: '--tag <name>           Only workspaces carrying this tag; repeat for any-of (case-insensitive)'
+  },
+  'worktree tag-color': {
+    tag: '--tag <name>           Tag whose color to change',
+    color: '--color <id>           blue, sky, violet, amber, emerald, or rose'
   },
   search: {
     query: '--query <text>         Search text; also accepted as the positional argument',

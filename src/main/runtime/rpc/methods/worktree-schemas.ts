@@ -13,6 +13,7 @@ export {
   WorktreeSelector,
   WorktreeSet,
   WorktreeSortOrder,
+  WorktreeTagColorSet,
   WorktreeTeardownMissingTerminalsParams,
   assertLinkedWorkItemSourceContextMatch
 } from '../../../../shared/rpc-contract/worktree-params'

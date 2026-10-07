@@ -4,6 +4,7 @@ import { TaskSourceContextSchema } from '../task-source-context-schema'
 import { isWorkspaceLinkedItemSourceContextMatch } from '../workspace-linked-item-source-context'
 import { isTuiAgent } from '../tui-agent-config'
 import { OptionalFiniteNumber, OptionalString, requiredString } from './rpc-param-primitives'
+import { WorkspaceTagSchema } from './workspace-tag-params'
 import { DiffCommentSchema } from '../diff-comment-schema'
 
 export const FolderWorkspaceLinkedTask = WorkspaceLinkedItemSchema.nullable()
@@ -55,6 +56,7 @@ export const FolderWorkspaceUpdate = z.object({
       sortOrder: OptionalFiniteNumber,
       manualOrder: OptionalFiniteNumber,
       workspaceStatus: OptionalString,
+      tags: z.array(WorkspaceTagSchema).optional(),
       createdWithAgent: z.string().refine(isTuiAgent).optional(),
       pendingFirstAgentMessageRename: z.boolean().optional(),
       firstAgentMessageRenameError: z.string().nullable().optional(),

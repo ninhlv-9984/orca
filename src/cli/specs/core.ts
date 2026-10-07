@@ -2,6 +2,7 @@ import type { CommandSpec } from '../args'
 import { GLOBAL_FLAGS } from '../args'
 import { WORKTREE_LISTING_SCOPE_NOTES } from './worktree-listing-scope-notes'
 import { WORKTREE_SET_COMMAND_SPEC } from './worktree-set'
+import { WORKTREE_TAG_COMMAND_SPECS } from './worktree-tags'
 import { SERVE_COMMAND_SPECS } from './serve'
 import { REPO_COMMAND_SPECS } from './repo'
 import { TERMINAL_SEND_COMMAND_SPEC } from './terminal-send'
@@ -118,6 +119,7 @@ export const CORE_COMMAND_SPECS: CommandSpec[] = [
     ]
   },
   WORKTREE_SET_COMMAND_SPEC,
+  ...WORKTREE_TAG_COMMAND_SPECS,
   {
     path: ['worktree', 'rm'],
     // Why: agents reach for git's `remove`/`delete` verbs; accept them as
@@ -141,9 +143,12 @@ export const CORE_COMMAND_SPECS: CommandSpec[] = [
   {
     path: ['worktree', 'ps'],
     summary: 'Show a compact orchestration summary across worktrees',
-    usage: 'orca worktree ps [--limit <n>] [--json]',
-    allowedFlags: [...GLOBAL_FLAGS, 'limit'],
-    notes: [...WORKTREE_LISTING_SCOPE_NOTES]
+    usage: 'orca worktree ps [--limit <n>] [--tag <name>]... [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'limit', 'tag'],
+    notes: [
+      ...WORKTREE_LISTING_SCOPE_NOTES,
+      'Repeat --tag to keep workspaces carrying ANY of the tags (case-insensitive); --limit applies after the filter.'
+    ]
   },
   {
     path: ['terminal', 'list'],

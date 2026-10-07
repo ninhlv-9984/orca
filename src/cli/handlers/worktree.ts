@@ -36,6 +36,8 @@ import {
   resolveCreateParentSelector
 } from './worktree-create-parent-selector'
 import { getOptionalLinearIssueLinkFlag } from './worktree-linear-issue-link'
+import { WORKTREE_TAG_HANDLERS } from './worktree-tag-handlers'
+import { getWorktreeTagFilterFlag, getWorktreeTagUpdateFlags } from './worktree-tag-flags'
 import { getOptionalWorktreeUnreadFlag } from './worktree-unread-flag'
 import { getReviewTargetLinkFlags } from './worktree-review-link-flags'
 import { assertGitLabLinkFlagProjectsMatch } from './worktree-gitlab-link-context'
@@ -136,10 +138,15 @@ async function getCreateRepoSelector(
 }
 
 export const WORKTREE_HANDLERS: Record<string, CommandHandler> = {
+  ...WORKTREE_TAG_HANDLERS,
   'worktree ps': async ({ flags, client, json }) => {
+    const tagFilter = getWorktreeTagFilterFlag(flags)
     const result = await client.call<WithAnnotatedHostScope<RuntimeWorktreePsResult>>(
       'worktree.ps',
-      { limit: getOptionalPositiveIntegerFlag(flags, 'limit') }
+      {
+        limit: getOptionalPositiveIntegerFlag(flags, 'limit'),
+        ...(tagFilter.length > 0 ? { tags: tagFilter } : {})
+      }
     )
     await annotateOmittedHostScope(client, result.result)
     printResult(result, json, formatWorktreePs)
@@ -261,6 +268,7 @@ export const WORKTREE_HANDLERS: Record<string, CommandHandler> = {
       ...linearIssueLink,
       comment: getOptionalStringFlag(flags, 'comment'),
       workspaceStatus: getOptionalStringFlag(flags, 'workspace-status'),
+      ...getWorktreeTagUpdateFlags(flags),
       isUnread,
       parentWorktree: await getOptionalWorktreeSelector(flags, 'parent-worktree', cwd, client),
       noParent: flags.get('no-parent') === true

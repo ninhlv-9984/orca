@@ -6,6 +6,7 @@ import { isWorkspaceLinkedItemSourceContextMatch } from '../../../shared/workspa
 import { DEFAULT_WORKSPACE_STATUS_ID } from '../../../shared/workspace-statuses'
 import type { WorktreeMeta } from '../../../shared/worktree/meta-types'
 import { WORKTREE_META_PERSISTED_DEFAULTS } from '../../../shared/worktree/meta-persisted-defaults'
+import { normalizeWorkspaceTags } from '../../../shared/worktree/worktree-tags'
 import { normalizeGitHubPRSuppressionUpdate } from '../../../shared/worktree/github-pr-suppression'
 
 type WorktreeMetaIdentity = {
@@ -47,6 +48,12 @@ export function mergeWorktreeMetaForWrite(
   )
     ? sourceContext
     : null
+  const tags = normalizeWorkspaceTags(updated.tags)
+  if (tags) {
+    updated.tags = tags
+  } else {
+    delete updated.tags
+  }
   updated.instanceId ||= randomUUID()
   return updated
 }

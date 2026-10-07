@@ -22,6 +22,7 @@ import { normalizeManualRepoOrder } from '../../../shared/manual-repo-order'
 import { normalizeBrowserPageZoomLevel } from '../../../shared/browser-page-zoom'
 import { normalizeFeatureTipIds } from '../../../shared/feature-tips'
 import { normalizeContextualTourIds } from '../../../shared/contextual-tours'
+import { normalizeWorkspaceTagColors } from '../../../shared/worktree/worktree-tags'
 import { normalizeFeatureInteractions } from '../../../shared/feature-interactions'
 import {
   normalizeGroupBy,
@@ -72,6 +73,7 @@ export function getPersistedUI(
       state.ui?.explorerDisplayRootByWorktree
     ),
     showDotfilesByWorktree: normalizeShowDotfilesByWorktree(state.ui?.showDotfilesByWorktree),
+    worktreeTagColors: normalizeWorkspaceTagColors(state.ui?.worktreeTagColors),
     featureTipsSeenIds: normalizeFeatureTipIds(state.ui?.featureTipsSeenIds),
     contextualToursSeenIds: normalizeContextualTourIds(state.ui?.contextualToursSeenIds),
     featureInteractions: normalizeFeatureInteractions(state.ui?.featureInteractions),
