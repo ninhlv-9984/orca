@@ -32,6 +32,7 @@ export type PersistedUIWriteBaseline = {
   explorerDisplayRootByWorktree: Record<string, string>
   showDotfilesByWorktree: Record<string, boolean>
   filterRepoIds: readonly string[]
+  filterTags: readonly string[]
   acknowledgedAgentsByPaneKey: Record<string, number>
   activityClearedAtByPaneKey: Record<string, number>
   manuallyUnreadTurnsByPaneKey: Record<string, number>
@@ -65,6 +66,7 @@ const PERSISTED_UI_WRITE_BASELINE_FIELD_SET = {
   explorerDisplayRootByWorktree: true,
   showDotfilesByWorktree: true,
   filterRepoIds: true,
+  filterTags: true,
   acknowledgedAgentsByPaneKey: true,
   activityClearedAtByPaneKey: true,
   manuallyUnreadTurnsByPaneKey: true
@@ -105,7 +107,7 @@ function stringArrayEqual(a: readonly string[], b: readonly string[]): boolean {
 
 /** Compares collection fields by value so hydration does not produce redundant persistence writes from new identities. */
 function writeFieldEqual(field: keyof PersistedUIWriteBaseline, a: unknown, b: unknown): boolean {
-  if (field === 'filterRepoIds') {
+  if (field === 'filterRepoIds' || field === 'filterTags') {
     return stringArrayEqual(a as readonly string[], b as readonly string[])
   }
   if (field === 'visibleWorkspaceHostIds') {
@@ -161,6 +163,8 @@ export function persistedUIWriteFieldsToWireUpdate(
       // Why: the store keeps this readonly for identity stability, but PersistedUI crosses to
       // main, which owns a mutable array — copy at the boundary rather than widening the wire type.
       update.filterRepoIds = [...(fields.filterRepoIds ?? [])]
+    } else if (field === 'filterTags') {
+      update.filterTags = [...(fields.filterTags ?? [])]
     } else {
       assignSameNameWireField(
         update,
@@ -174,7 +178,7 @@ export function persistedUIWriteFieldsToWireUpdate(
 
 type SameNameWriteField = Exclude<
   keyof PersistedUIWriteBaseline,
-  'showSleepingWorkspaces' | 'filterRepoIds'
+  'showSleepingWorkspaces' | 'filterRepoIds' | 'filterTags'
 >
 
 // Compile check: every non-special mirror field must exist on PersistedUIState

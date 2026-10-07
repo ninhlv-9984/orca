@@ -46,6 +46,8 @@ export type WorktreeCardProperty =
   | 'inline-agents'
   // Execution-host pill, shown only when the visible workspaces span more than one host; on by default.
   | 'host'
+  // Colored workspace tag chips on the card; on by default.
+  | 'tags'
 
 export type WorktreeCardMode = 'Default' | 'Compact'
 

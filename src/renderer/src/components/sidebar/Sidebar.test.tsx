@@ -59,6 +59,8 @@ vi.mock('./WorktreeList', () => ({
   default: () => <div data-testid="worktree-list" />
 }))
 
+vi.mock('./WorkspaceTagFilterStrip', () => ({ WorkspaceTagFilterStrip: () => null }))
+
 vi.mock('./SidebarToolbar', () => ({
   default: () => <div data-testid="sidebar-toolbar" />
 }))

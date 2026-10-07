@@ -131,6 +131,13 @@ const BASE_WORKTREE_CARD_PROPERTY_OPTIONS: WorktreeCardPropertyOption[] = [
     }
   },
   {
+    id: 'tags',
+    properties: ['tags'],
+    get label() {
+      return translate('auto.components.sidebar.SidebarWorkspaceOptionsMenu.tags', 'Tags')
+    }
+  },
+  {
     id: 'branch',
     properties: ['branch'],
     get label() {

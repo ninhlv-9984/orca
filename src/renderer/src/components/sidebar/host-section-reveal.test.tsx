@@ -84,6 +84,7 @@ function sections(
       importedWorktreesByRepo: new Map(),
       newExternalWorktreesInboxByRepo: new Map(),
       filterRepoIds: [],
+      filterTags: [],
       visibleWorkspaceHostIds,
       workspaceHostScope: 'all'
     })

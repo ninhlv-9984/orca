@@ -13,6 +13,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { DEFAULT_SHOW_SLEEPING_WORKSPACES } from '../../../../shared/constants'
 import { isSleepingSweepExemptionNarrowingList } from './visible-worktrees'
 import SidebarRepositoryFilterSection from './SidebarRepositoryFilterSection'
+import SidebarTagFilterSection from './SidebarTagFilterSection'
+import { useWorkspaceTagCatalog } from './workspace-tag-catalog'
 import SidebarWorkspaceFilterSection from './SidebarWorkspaceFilterSection'
 import { getSidebarHostVisibilityLabel, shouldShowHostScopeControls } from './sidebar-host-options'
 import { useSidebarHostScopeOptions } from './use-sidebar-host-scope-options'
@@ -36,6 +38,7 @@ export function useWorkspaceOptionsFilterBadge(): {
   const hideWorkspacesFromOtherDevices = useAppStore((s) => s.hideWorkspacesFromOtherDevices)
   const alwaysShowDefaultBranchWorkspace = useAppStore((s) => s.alwaysShowDefaultBranchWorkspace)
   const filterRepoIds = useAppStore((s) => s.filterRepoIds)
+  const filterTagCount = useAppStore((s) => s.filterTags.length)
   const repos = useAppStore((s) => s.repos)
   const visibleWorkspaceHostIds = useAppStore((s) => s.visibleWorkspaceHostIds)
 
@@ -65,6 +68,7 @@ export function useWorkspaceOptionsFilterBadge(): {
     hideWorkspacesFromOtherDevices ||
     hasSleepingExemptionFilter ||
     hasRepoFilter ||
+    filterTagCount > 0 ||
     hasHostVisibilityFilter
   const activeFilterCount =
     (hasSleepingFilter ? 1 : 0) +
@@ -75,7 +79,8 @@ export function useWorkspaceOptionsFilterBadge(): {
     (hideWorkspacesFromOtherDevices ? 1 : 0) +
     (hasSleepingExemptionFilter ? 1 : 0) +
     (hasHostVisibilityFilter ? 1 : 0) +
-    selectedCount
+    selectedCount +
+    filterTagCount
 
   return {
     hasAnyFilter,
@@ -97,6 +102,7 @@ export function WorkspaceOptionsMenuItems({
   const setSortBy = useAppStore((s) => s.setSortBy)
   const groupBy = useAppStore((s) => s.groupBy)
   const setGroupBy = useAppStore((s) => s.setGroupBy)
+  const filterTagCount = useAppStore((s) => s.filterTags.length)
   const projectOrderBy = useAppStore((s) => s.projectOrderBy)
   const setProjectOrderBy = useAppStore((s) => s.setProjectOrderBy)
   const { hostOptions } = useSidebarHostScopeOptions()
@@ -106,6 +112,7 @@ export function WorkspaceOptionsMenuItems({
     PROJECT_ORDER_OPTIONS.find((opt) => opt.id === projectOrderBy)?.label ?? 'Manual'
   const hostVisibilityLabel = getSidebarHostVisibilityLabel(visibleWorkspaceHostIds, hostOptions)
   const boardAttr = preserveWorkspaceBoardOpen ? '' : undefined
+  const hasTagRow = useWorkspaceTagCatalog().tags.length > 0 || filterTagCount > 0
 
   return (
     <>
@@ -117,7 +124,7 @@ export function WorkspaceOptionsMenuItems({
       </DropdownMenuLabel>
       {/* Why: host + project filters share one section and the same single-row
           shell as Sort by (label left, value right) so the menu stays flat. */}
-      {(showHostScopeControls || repos.length > 1) && (
+      {(showHostScopeControls || repos.length > 1 || hasTagRow) && (
         <>
           <DropdownMenuLabel>
             {translate('auto.components.sidebar.SidebarWorkspaceOptionsMenu.showSection', 'Show')}
@@ -133,6 +140,7 @@ export function WorkspaceOptionsMenuItems({
             />
           )}
           <SidebarRepositoryFilterSection preserveWorkspaceBoardOpen={preserveWorkspaceBoardOpen} />
+          <SidebarTagFilterSection preserveWorkspaceBoardOpen={preserveWorkspaceBoardOpen} />
           <DropdownMenuSeparator />
         </>
       )}
