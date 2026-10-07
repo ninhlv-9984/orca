@@ -27,18 +27,21 @@ describe('workspace tag rules', () => {
     expect(normalizeWorkspaceTag('a\nb')).toBeNull()
     expect(validateWorkspaceTag('a\u0000b')).toEqual({
       ok: false,
-      error: expect.stringContaining('control')
+      error: expect.stringContaining('control'),
+      code: 'control'
     })
   })
 
   it('explains why a tag is invalid', () => {
     expect(validateWorkspaceTag('a,b')).toEqual({
       ok: false,
-      error: expect.stringContaining('comma')
+      error: expect.stringContaining('comma'),
+      code: 'comma'
     })
     expect(validateWorkspaceTag('x'.repeat(33))).toEqual({
       ok: false,
-      error: expect.stringContaining('32')
+      error: expect.stringContaining('32'),
+      code: 'too-long'
     })
   })
 

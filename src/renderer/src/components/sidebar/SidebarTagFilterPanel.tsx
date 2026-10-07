@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/command'
 import { translate } from '@/i18n/i18n'
 import { workspaceTagKey, type WorkspaceTagColors } from '../../../../shared/worktree/worktree-tags'
+import { keepTextKeysInMenuInput } from './menu-text-input-keydown'
 import { WorkspaceTagChip, WorkspaceTagDot } from './WorkspaceTagChip'
 import { getWorkspaceTagColorId } from './workspace-tag-colors'
 import type { WorkspaceTagEntry } from './workspace-tag-catalog'
@@ -67,8 +68,6 @@ export function SidebarTagFilterPanel({
 
   const handleInputKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
-      // Why: this command is embedded in a Radix dropdown; text keys must stay in the search field
-      // instead of triggering menu typeahead.
       if (event.key === 'Backspace' && query === '' && filterTags.length > 0) {
         event.preventDefault()
         event.stopPropagation()
@@ -87,17 +86,7 @@ export function SidebarTagFilterPanel({
         }
         return
       }
-      // Why: swallowing every ArrowLeft would trap keyboard users in the panel; claim it only while the caret can move.
-      if (event.key === 'ArrowLeft') {
-        const { selectionStart, selectionEnd } = event.currentTarget
-        if (!(selectionStart === 0 && selectionEnd === 0)) {
-          event.stopPropagation()
-        }
-        return
-      }
-      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
-        event.stopPropagation()
-      }
+      keepTextKeysInMenuInput(event)
     },
     [availableTags, filterTags, handleRemoveTag, handleSelectTag, highlightedKey, query]
   )

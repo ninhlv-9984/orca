@@ -1,11 +1,10 @@
-import React, { useEffect, useRef } from 'react'
+import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { workspaceTagKey } from '../../../../shared/worktree/worktree-tags'
 import { WorkspaceTagChip } from './WorkspaceTagChip'
 import { getWorkspaceTagColorId } from './workspace-tag-colors'
-import { pruneVanishedFilterTags } from './workspace-tag-filter'
 import { useWorkspaceTagCatalog } from './workspace-tag-catalog'
 
 /** Thin strip under the sidebar header while a tag filter is active; hidden otherwise. */
@@ -16,20 +15,9 @@ export const WorkspaceTagFilterStrip = React.memo(
     const setFilterTags = useAppStore((s) => s.setFilterTags)
     const colors = useAppStore((s) => s.worktreeTagColors)
     const catalog = useWorkspaceTagCatalog()
-    const knownKeysRef = useRef<ReadonlySet<string>>(new Set())
-
-    useEffect(() => {
-      // Why: an empty catalog usually means workspaces have not loaded yet, not that every tag vanished.
-      if (catalog.totalWorkspaces === 0) {
-        return
-      }
-      const currentKeys = new Set(catalog.tags.map((tag) => tag.key))
-      const retained = pruneVanishedFilterTags(filterTags, knownKeysRef.current, currentKeys)
-      knownKeysRef.current = currentKeys
-      if (retained.length !== filterTags.length) {
-        setFilterTags(retained)
-      }
-    }, [catalog, filterTags, setFilterTags])
+    // Why: never prune on catalog changes (workspaces can transiently leave the store on reload or reconnect);
+    // a tag no workspace carries stays selected and is shown muted so the user can remove it.
+    const carriedKeys = new Set(catalog.tags.map((tag) => tag.key))
 
     if (filterTags.length === 0) {
       return null
@@ -46,6 +34,7 @@ export const WorkspaceTagFilterStrip = React.memo(
               key={workspaceTagKey(tag)}
               tag={tag}
               colorId={getWorkspaceTagColorId(colors, tag)}
+              muted={catalog.totalWorkspaces > 0 && !carriedKeys.has(workspaceTagKey(tag))}
               onRemove={() => setFilterTags(filterTags.filter((entry) => entry !== tag))}
             />
           ))}

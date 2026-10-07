@@ -6656,7 +6656,11 @@
           "selectedTagsCount": "{{value0}} tags"
         },
         "WorkspaceTags": {
-          "matchingCountTitle": "Workspaces with these tags / all workspaces"
+          "matchingCountTitle": "Workspaces with these tags / all workspaces",
+          "errorEmpty": "Tag must not be empty.",
+          "errorControl": "Tag must not contain control characters.",
+          "errorComma": "Tag \"{{value0}}\" must not contain commas.",
+          "errorTooLong": "Tag \"{{value0}}\" is longer than {{value1}} characters."
         },
         "WorktreeTagMenuItems": {
           "searchOrCreate": "Search or create tag...",
