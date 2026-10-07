@@ -59,17 +59,25 @@ let root: Root
 let updateWorktreeMeta: ReturnType<typeof vi.fn>
 let setWorkspaceTagColor: ReturnType<typeof vi.fn>
 
-function render(worktree: Worktree = target): void {
+let setFilterTags: ReturnType<typeof vi.fn>
+
+function render(worktree: Worktree = target, filterTags: string[] = []): void {
   updateWorktreeMeta = vi.fn().mockResolvedValue({ ok: true })
   setWorkspaceTagColor = vi.fn()
+  setFilterTags = vi.fn()
   mocks.state = {
     worktreesByRepo: { repo1: [worktree, other] },
     folderWorkspaces: [],
-    filterTags: [],
+    filterTags,
     worktreeTagColors: { api: 'rose', web: 'blue' },
     updateWorktreeMeta,
-    setWorkspaceTagColor
+    setWorkspaceTagColor,
+    setFilterTags
   }
+  mount(worktree)
+}
+
+function mount(worktree: Worktree): void {
   act(() => {
     root.render(
       <TooltipProvider>
@@ -127,7 +135,7 @@ function pressEnter(): void {
 }
 
 function byLabel(label: string): HTMLElement {
-  const el = document.querySelector<HTMLElement>(`button[aria-label="${label}"]`)
+  const el = document.querySelector<HTMLElement>(`[aria-label="${label}"]`)
   if (!el) {
     throw new Error(`no button ${label}`)
   }
@@ -232,7 +240,7 @@ describe('WorktreeTagMenuItems', () => {
     pressEnter()
 
     expect(updateWorktreeMeta).not.toHaveBeenCalled()
-    expect(document.body.textContent).toContain('must not contain commas')
+    expect(document.body.textContent).toContain('Tag "a,b" must not contain commas.')
   })
 
   it('keeps typed keys inside the input instead of menu typeahead', async () => {
@@ -248,6 +256,53 @@ describe('WorktreeTagMenuItems', () => {
     // Why: React stops propagation at its root, so the Radix menu's own handlers never see the key.
     expect(typed.cancelBubble).toBe(true)
     expect(document.activeElement).toBe(input())
+  })
+
+  it('does not pull focus back to the input when the store updates after a toggle', async () => {
+    render()
+    openSubmenu()
+    await settle()
+
+    const row = checkbox('web')
+    act(() => row.focus())
+    expect(document.activeElement).toBe(row)
+
+    click(row)
+    mount(makeWorktree('wt-target', ['API', 'web']))
+    await settle()
+
+    expect(document.activeElement).not.toBe(input())
+  })
+
+  it('reaches the color dot and swatches as menu items so the keyboard can roam to them', async () => {
+    render()
+    openSubmenu()
+    await settle()
+
+    const dot = byLabel('Change web color')
+    expect(dot.getAttribute('role')).toBe('menuitem')
+    click(dot)
+    expect(byLabel('Set web color to Violet').getAttribute('role')).toBe('menuitem')
+  })
+
+  it('drops a filter tag together with its last carrier', async () => {
+    render(target, ['api', 'web'])
+    openSubmenu()
+    await settle()
+
+    click(checkbox('API'))
+
+    expect(setFilterTags).toHaveBeenCalledWith(['web'])
+  })
+
+  it('keeps the filter tag while another workspace still carries it', async () => {
+    render(makeWorktree('wt-target', ['web']), ['web'])
+    openSubmenu()
+    await settle()
+
+    click(checkbox('web'))
+
+    expect(setFilterTags).not.toHaveBeenCalled()
   })
 
   it('recolors a tag from the swatches next to its dot', async () => {
