@@ -179,6 +179,7 @@ export type FolderWorkspacesApi = {
         | 'sortOrder'
         | 'manualOrder'
         | 'workspaceStatus'
+        | 'tags'
         | 'createdWithAgent'
         | 'pendingFirstAgentMessageRename'
         | 'firstAgentMessageRenameError'

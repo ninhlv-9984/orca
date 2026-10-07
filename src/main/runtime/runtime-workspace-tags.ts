@@ -31,9 +31,9 @@ export function listRuntimeWorkspaceTags(store: RuntimeStore): RuntimeWorkspaceT
   const colors = store.getUI?.().worktreeTagColors ?? {}
   return [...byKey.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .flatMap(([key, entry]) => {
+    .map(([key, entry]) => {
       const color = colors[key]
-      return color ? [{ ...entry, color }] : []
+      return color ? { ...entry, color } : entry
     })
 }
 

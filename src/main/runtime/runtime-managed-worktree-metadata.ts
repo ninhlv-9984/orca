@@ -1,6 +1,6 @@
 import type { GitPushTarget, Worktree } from '../../shared/worktree/types'
 import type { WorktreeMeta } from '../../shared/worktree/meta-types'
-import { worktreeWorkspaceKey } from '../../shared/workspace-scope'
+import { parseWorkspaceKey, worktreeWorkspaceKey } from '../../shared/workspace-scope'
 import { splitWorktreeId } from '../../shared/worktree/id'
 import { planWorktreeSortOrderUpdates } from '../../shared/worktree/sort-order-update'
 import { addWorkspaceTags, removeWorkspaceTags } from '../../shared/worktree/worktree-tags'
@@ -34,8 +34,15 @@ export async function updateRuntimeManagedWorktreeMetadata(args: {
   store: RuntimeStore
   ports: Ports
 }): Promise<Worktree> {
-  const worktree = await args.ports.resolveWorktree(args.selector)
   const { lineage, tags, addTags, removeTags, ...metaUpdates } = args.updates
+  const touchesTags = tags !== undefined || Boolean(addTags) || Boolean(removeTags)
+  const bareSelector = args.selector.startsWith('id:') ? args.selector.slice(3) : args.selector
+  if (touchesTags && parseWorkspaceKey(bareSelector)?.type === 'folder') {
+    throw new Error(
+      'Tags on folder workspaces are set from the Orca sidebar; `worktree set --tag/--untag/--tags` only supports git worktrees and repo folder workspaces.'
+    )
+  }
+  const worktree = await args.ports.resolveWorktree(args.selector)
   if (lineage?.parentWorktree) {
     args.ports.invalidateResolved()
     args.ports.invalidateScan(worktree.repoId)
@@ -97,7 +104,6 @@ export async function updateRuntimeManagedWorktreeMetadata(args: {
   }
   const metadataUpdates = stripOrcaProvenanceMetaUpdates(persisted)
   const executionHostId = worktree.identity?.executionHostId ?? worktree.hostId
-  const touchesTags = tags !== undefined || Boolean(addTags) || Boolean(removeTags)
   if (touchesTags) {
     // Why: read the host's current tags synchronously with the write so concurrent add/remove callers don't clobber each other.
     const current =

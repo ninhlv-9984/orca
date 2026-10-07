@@ -137,7 +137,7 @@ export function formatWorkspaceTags(result: { tags: RuntimeWorkspaceTag[] }): st
   if (result.tags.length === 0) {
     return 'No tags.'
   }
-  return result.tags.map((tag) => `${tag.name}  ${tag.color}  ${tag.count}`).join('\n')
+  return result.tags.map((tag) => `${tag.name}  ${tag.color ?? '-'}  ${tag.count}`).join('\n')
 }
 
 function formatTagsSuffix(tags: readonly string[] | undefined, separator: string): string {
