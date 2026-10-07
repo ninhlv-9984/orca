@@ -28,17 +28,20 @@ export function WorkspaceTagDot({
 export function WorkspaceTagChip({
   tag,
   colorId,
-  onRemove
+  onRemove,
+  muted = false
 }: {
   tag: string
   colorId: string | undefined
   onRemove?: () => void
+  /** A selected filter tag that no workspace carries any more. */
+  muted?: boolean
 }): React.JSX.Element {
   const color = getWorkspaceTagColorOption(colorId)
   return (
     <Badge variant="hostContext" className="max-w-[8rem] min-w-0" data-workspace-tag-chip={tag}>
       {/* Why a wrapper: the tone class comes from the status palette at runtime, which a primitive's static className cannot carry. */}
-      <span className={cn('flex min-w-0 items-center gap-1', color.tone)}>
+      <span className={cn('flex min-w-0 items-center gap-1', color.tone, muted && 'opacity-50')}>
         <WorkspaceTagDot colorId={colorId} />
         <span className="min-w-0 truncate">{tag}</span>
         {onRemove ? (

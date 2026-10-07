@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Tag } from 'lucide-react'
 import {
   DropdownMenuCheckboxItem,
@@ -21,7 +21,12 @@ import {
   getWorkspaceTagColorOptions
 } from './workspace-tag-colors'
 import { useWorkspaceTagCatalog } from './workspace-tag-catalog'
-import { resolveWorkspaceTagSubmit, toggleWorkspaceTag } from './worktree-tag-menu-logic'
+import { keepTextKeysInMenuInput } from './menu-text-input-keydown'
+import {
+  filterTagsToDropAfterRemoval,
+  resolveWorkspaceTagSubmit,
+  toggleWorkspaceTag
+} from './worktree-tag-menu-logic'
 
 const EMPTY_TAGS: readonly string[] = []
 
@@ -47,21 +52,53 @@ function WorktreeTagMenuPanel({ worktree }: { worktree: Worktree }): React.JSX.E
   const updateWorktreeMeta = useAppStore((s) => s.updateWorktreeMeta)
   const setWorkspaceTagColor = useAppStore((s) => s.setWorkspaceTagColor)
   const colors = useAppStore((s) => s.worktreeTagColors)
+  const filterTags = useAppStore((s) => s.filterTags)
+  const setFilterTags = useAppStore((s) => s.setFilterTags)
+  const inputRef = useRef<HTMLInputElement>(null)
   const catalog = useWorkspaceTagCatalog()
   const [query, setQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [recoloringKey, setRecoloringKey] = useState<string | null>(null)
   const currentTags = worktree.tags ?? EMPTY_TAGS
 
+  // Why: autoFocus loses to the menu's focus scope during commit; focus once, a frame after mount.
+  // A callback ref would refocus on every render and steal focus from the row being toggled.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => inputRef.current?.focus())
+    return () => cancelAnimationFrame(frame)
+  }, [])
+
   const applyTags = useCallback(
     (tags: string[]) => {
+      // Why: this writes the full tag set, so a CLI --tag landing in the same instant can be lost; acceptable here.
+      const removed = currentTags.filter(
+        (tag) => !tags.some((next) => workspaceTagKey(next) === workspaceTagKey(tag))
+      )
+      // Why: a filter tag with no carrier left would leave the sidebar empty, so drop it with its last carrier.
+      const stale = filterTagsToDropAfterRemoval(
+        filterTags,
+        removed,
+        new Map(catalog.tags.map((tag) => [tag.key, tag.count]))
+      )
+      if (stale.length > 0) {
+        const staleKeys = new Set(stale.map(workspaceTagKey))
+        setFilterTags(filterTags.filter((tag) => !staleKeys.has(workspaceTagKey(tag))))
+      }
       void updateWorktreeMeta(
         worktree.id,
         { tags },
         { executionHostId: worktree.hostId ?? 'local' }
       )
     },
-    [updateWorktreeMeta, worktree.hostId, worktree.id]
+    [
+      catalog.tags,
+      currentTags,
+      filterTags,
+      setFilterTags,
+      updateWorktreeMeta,
+      worktree.hostId,
+      worktree.id
+    ]
   )
 
   const needle = query.trim().toLowerCase()
@@ -81,7 +118,7 @@ function WorktreeTagMenuPanel({ worktree }: { worktree: Worktree }): React.JSX.E
       catalog.tags.map((tag) => tag.name)
     )
     if (result.kind === 'error') {
-      setError(result.error)
+      setError(result.message)
       return
     }
     setError(null)
@@ -99,18 +136,7 @@ function WorktreeTagMenuPanel({ worktree }: { worktree: Worktree }): React.JSX.E
         submit()
         return
       }
-      // Why: the input lives inside a Radix menu; text keys must stay in the field instead of
-      // triggering menu typeahead. Arrow up/down and Escape keep navigating/closing the menu.
-      if (event.key === 'ArrowLeft') {
-        const { selectionStart, selectionEnd } = event.currentTarget
-        if (!(selectionStart === 0 && selectionEnd === 0)) {
-          event.stopPropagation()
-        }
-        return
-      }
-      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Escape') {
-        event.stopPropagation()
-      }
+      keepTextKeysInMenuInput(event, ['ArrowDown', 'ArrowUp', 'Escape'])
     },
     [submit]
   )
@@ -119,12 +145,7 @@ function WorktreeTagMenuPanel({ worktree }: { worktree: Worktree }): React.JSX.E
     <>
       <div className="px-1.5 pb-1">
         <Input
-          // Why: autoFocus loses to the menu's focus scope during commit; the shared panels focus a frame later.
-          ref={(node) => {
-            if (node) {
-              requestAnimationFrame(() => node.focus())
-            }
-          }}
+          ref={inputRef}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value)
@@ -186,18 +207,21 @@ function WorktreeTagMenuPanel({ worktree }: { worktree: Worktree }): React.JSX.E
                 </DropdownMenuCheckboxItem>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
-                      type="button"
+                    <DropdownMenuItem
                       aria-label={translate(
                         'auto.components.sidebar.WorktreeTagMenuItems.changeColor',
                         'Change {{value0}} color',
                         { value0: tag.name }
                       )}
-                      className="mr-1 flex size-5 shrink-0 items-center justify-center rounded-md outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring"
-                      onClick={() => setRecoloringKey(recoloringKey === tag.key ? null : tag.key)}
+                      className="mr-1 shrink-0 justify-center"
+                      // Why: a menu item, not a bare button, so arrow keys reach it.
+                      onSelect={(event) => {
+                        event.preventDefault()
+                        setRecoloringKey(recoloringKey === tag.key ? null : tag.key)
+                      }}
                     >
                       <WorkspaceTagDot colorId={colorId} className="size-2.5" />
-                    </button>
+                    </DropdownMenuItem>
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={4}>
                     {getWorkspaceTagColorOption(colorId).label}
@@ -207,25 +231,28 @@ function WorktreeTagMenuPanel({ worktree }: { worktree: Worktree }): React.JSX.E
               {recoloringKey === tag.key && (
                 <div className="flex items-center gap-1 px-2 pb-1 pl-7">
                   {getWorkspaceTagColorOptions().map((color) => (
-                    <button
+                    <DropdownMenuItem
                       key={color.id}
-                      type="button"
                       aria-label={translate(
                         'auto.components.sidebar.WorktreeTagMenuItems.setColor',
                         'Set {{value0}} color to {{value1}}',
                         { value0: tag.name, value1: color.label }
                       )}
-                      className={cn(
-                        'flex size-5 items-center justify-center rounded-md border border-transparent outline-none transition-colors hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring',
-                        colorId === color.id && 'border-ring bg-accent'
-                      )}
-                      onClick={() => {
+                      className="justify-center"
+                      onSelect={(event) => {
+                        event.preventDefault()
                         setWorkspaceTagColor(tag.name, color.id)
                         setRecoloringKey(null)
                       }}
                     >
-                      <span className={cn('size-3 rounded-full', color.swatch)} />
-                    </button>
+                      <span
+                        className={cn(
+                          'size-3 rounded-full',
+                          color.swatch,
+                          colorId === color.id && 'ring-2 ring-ring ring-offset-1'
+                        )}
+                      />
+                    </DropdownMenuItem>
                   ))}
                 </div>
               )}

@@ -1,3 +1,4 @@
+import { describeWorkspaceTagError } from './workspace-tag-error-messages'
 import {
   addWorkspaceTags,
   removeWorkspaceTags,
@@ -6,7 +7,7 @@ import {
 } from '../../../../shared/worktree/worktree-tags'
 
 export type WorkspaceTagSubmitResult =
-  | { kind: 'error'; error: string }
+  | { kind: 'error'; message: string }
   | { kind: 'noop' }
   | { kind: 'set'; tags: string[] }
 
@@ -22,7 +23,12 @@ export function resolveWorkspaceTagSubmit(
   const validation = validateWorkspaceTag(query)
   if (!validation.ok) {
     // Why: an empty box is "nothing typed yet", not an error worth shouting about.
-    return query.trim() === '' ? { kind: 'noop' } : { kind: 'error', error: validation.error }
+    return query.trim() === ''
+      ? { kind: 'noop' }
+      : {
+          kind: 'error',
+          message: describeWorkspaceTagError(validation.code, query.trim(), validation.error)
+        }
   }
   const key = workspaceTagKey(validation.tag)
   if ((currentTags ?? []).some((tag) => workspaceTagKey(tag) === key)) {
@@ -44,4 +50,16 @@ export function toggleWorkspaceTag(
   return (
     (has ? removeWorkspaceTags(currentTags, [tag]) : addWorkspaceTags(currentTags, [tag])) ?? []
   )
+}
+
+/** Filter tags to drop after a tag was removed from the last workspace carrying it, so the filter cannot go stale. */
+export function filterTagsToDropAfterRemoval(
+  filterTags: readonly string[],
+  removedTags: readonly string[],
+  carrierCountByKey: ReadonlyMap<string, number>
+): string[] {
+  const dropped = new Set(
+    removedTags.map(workspaceTagKey).filter((key) => (carrierCountByKey.get(key) ?? 0) <= 1)
+  )
+  return filterTags.filter((tag) => dropped.has(workspaceTagKey(tag)))
 }

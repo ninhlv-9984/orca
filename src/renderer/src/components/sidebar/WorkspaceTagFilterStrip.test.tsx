@@ -86,19 +86,26 @@ describe('WorkspaceTagFilterStrip', () => {
     expect(setFilterTags).toHaveBeenCalledWith(['web'])
   })
 
-  it('prunes a selected tag once the last workspace carrying it drops it', () => {
-    render({ filterTags: ['api', 'web'] })
-    expect(setFilterTags).not.toHaveBeenCalled()
+  it('keeps a selected tag no workspace carries, shown muted and removable', () => {
+    render({ filterTags: ['api', 'ghost'] })
 
-    setFilterTags = vi.fn()
+    expect(setFilterTags).not.toHaveBeenCalled()
+    const ghost = container.querySelector('[data-workspace-tag-chip="ghost"]')
+    expect(ghost?.querySelector('.opacity-50')).not.toBeNull()
+    expect(container.querySelector('[data-workspace-tag-chip="api"] .opacity-50')).toBeNull()
     act(() => {
-      mocks.setState({
-        ...mocks.state,
-        worktreesByRepo: { r: [{ id: 'b', tags: ['web'] }, { id: 'c' }] },
-        setFilterTags
-      })
+      ghost?.querySelector('button')?.click()
+    })
+    expect(setFilterTags).toHaveBeenCalledWith(['api'])
+  })
+
+  it('does not drop a persisted tag when workspaces transiently leave the store', () => {
+    render({ filterTags: ['api'] })
+    act(() => {
+      mocks.setState({ ...mocks.state, worktreesByRepo: {} })
     })
 
-    expect(setFilterTags).toHaveBeenCalledWith(['web'])
+    expect(setFilterTags).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-workspace-tag-chip="api"]')).not.toBeNull()
   })
 })
