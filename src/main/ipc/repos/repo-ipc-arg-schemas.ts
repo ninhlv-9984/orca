@@ -6,6 +6,7 @@ import { WorkspaceAttachmentsSchema } from '../../../shared/workspace-attachment
 import { isWorkspaceLinkedItemSourceContextMatch } from '../../../shared/workspace-linked-item-source-context'
 import { DiffCommentSchema } from '../../../shared/diff-comment-schema'
 import { normalizeExecutionHostId } from '../../../shared/execution-host'
+import { WorkspaceTagSchema } from '../../../shared/rpc-contract/workspace-tag-params'
 
 export const ProjectGroupCreateArgs = z.object({
   name: z.string().min(1),
@@ -161,6 +162,7 @@ export const FolderWorkspaceUpdateArgs = z.object({
       sortOrder: z.number().finite().optional(),
       manualOrder: z.number().finite().optional(),
       workspaceStatus: z.string().optional(),
+      tags: z.array(WorkspaceTagSchema).optional(),
       createdWithAgent: z.string().refine(isTuiAgent).optional(),
       pendingFirstAgentMessageRename: z.boolean().optional(),
       firstAgentMessageRenameError: z.string().nullable().optional(),

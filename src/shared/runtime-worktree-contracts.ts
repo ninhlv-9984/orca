@@ -139,7 +139,8 @@ export type RuntimeWorktreeCreateResult = {
 
 export type RuntimeWorkspaceTag = {
   name: string
-  color: WorkspaceTagColorId
+  /** Absent when the host could not assign one. */
+  color?: WorkspaceTagColorId
   count: number
 }
 

@@ -191,6 +191,7 @@ ORCA worktree tag-color --tag backend --color emerald --json
 - Do not remove tags you did not add unless the user asks.
 - `worktree ps --tag` repeats and matches any of the tags. `worktree list`, `show` and `ps` JSON include `tags` (absent when empty).
 - A new workspace created with a parent inherits the parent's tags.
+- Entity folder workspaces (`folder:<id>`) cannot be tagged from the CLI; `worktree set --tag` on one errors. Their tags show in `worktree ps` and `worktree tags` once the user sets them in Orca.
 - `tag-color` takes `blue`, `sky`, `violet`, `amber`, `emerald` or `rose`; change a color only when asked.
 
 Issue/review links: `--pr` writes the GitHub pull request number; `--gitlab-issue` and

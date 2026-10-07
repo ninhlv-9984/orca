@@ -23,15 +23,25 @@ export function ensureWorkspaceTagColors(
   }
 }
 
+/** Overlays the stored tags (e.g. just inherited) on a worktree projected before they were written. */
+export function withStoredWorkspaceTags<T extends { id: string }>(
+  store: { getWorktreeMeta?: Store['getWorktreeMeta'] },
+  worktree: T
+): T & { tags?: string[] } {
+  const tags = store.getWorktreeMeta?.(worktree.id)?.tags
+  return tags ? { ...worktree, tags } : worktree
+}
+
 /** A workspace created under a parent starts with the parent's tags. */
 export function inheritWorkspaceTags(
   store: TagColorStore & { setWorktreeMeta: Store['setWorktreeMeta'] },
   childWorktreeId: string,
   parentTags: readonly string[] | undefined
-): void {
+): string[] | undefined {
   if (!parentTags?.length) {
-    return
+    return undefined
   }
   const written = store.setWorktreeMeta(childWorktreeId, { tags: [...parentTags] })
   ensureWorkspaceTagColors(store, written.tags)
+  return written.tags
 }

@@ -31,6 +31,10 @@ export function validateWorkspaceTag(raw: unknown): WorkspaceTagValidation {
   if (tag.length === 0) {
     return { ok: false, error: 'Tag must not be empty.' }
   }
+  // eslint-disable-next-line no-control-regex -- control characters (incl. NUL) are never valid in a tag
+  if (/[\u0000-\u001f\u007f]/.test(tag)) {
+    return { ok: false, error: 'Tag must not contain control characters.' }
+  }
   if (tag.includes(',')) {
     return { ok: false, error: `Tag "${tag}" must not contain commas.` }
   }

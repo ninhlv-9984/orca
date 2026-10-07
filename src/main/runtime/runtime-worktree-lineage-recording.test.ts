@@ -27,7 +27,9 @@ function makeStore(parentTags?: string[]) {
   return { store: store as unknown as RuntimeStore, written, getColors: () => colors }
 }
 
-const child = { id: 'repo::/child', instanceId: 'child-instance' }
+function makeChild(): { id: string; instanceId: string; tags?: string[] } {
+  return { id: 'repo::/child', instanceId: 'child-instance' }
+}
 
 function worktreeParent(): WorktreeLineageRecordingResolution {
   return {
@@ -45,13 +47,16 @@ function worktreeParent(): WorktreeLineageRecordingResolution {
 
 describe('recordCreatedWorktreeLineage tag inheritance', () => {
   it('copies a worktree parent tags to the child and colors them', () => {
+    const child = makeChild()
     const { store, written, getColors } = makeStore(['Api', 'web'])
     recordCreatedWorktreeLineage(store, child, worktreeParent())
     expect(written[child.id]?.tags).toEqual(['Api', 'web'])
+    expect(child.tags).toEqual(['Api', 'web'])
     expect(Object.keys(getColors()).sort()).toEqual(['api', 'web'])
   })
 
   it('copies a folder parent tags', () => {
+    const child = makeChild()
     const { store, written } = makeStore()
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the recorder reads only the parent's tags.
     const folderWorkspace = { id: 'folder-1', tags: ['docs'] } as unknown as FolderWorkspace
@@ -70,6 +75,7 @@ describe('recordCreatedWorktreeLineage tag inheritance', () => {
   })
 
   it('writes nothing when the parent has no tags or no parent resolved', () => {
+    const child = makeChild()
     const untagged = makeStore()
     recordCreatedWorktreeLineage(untagged.store, child, worktreeParent())
     expect(untagged.store.setWorktreeMeta).not.toHaveBeenCalled()

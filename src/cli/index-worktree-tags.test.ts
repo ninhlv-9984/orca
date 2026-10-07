@@ -209,6 +209,25 @@ describe('orca cli workspace tags', () => {
     await expectRejected(['worktree', 'tag-color', '--tag', 'api'], 'Missing required --color')
   })
 
+  it('rejects empty --tag/--untag values instead of ignoring them', async () => {
+    await expectRejected(['worktree', 'ps', '--tag', '', '--json'], '--tag must not be empty')
+    await expectRejected([...SET_ARGS, '--untag', '', '--json'], '--untag must not be empty')
+  })
+
+  it('rejects a repeated --tag for `worktree tag-color`', async () => {
+    await expectRejected(
+      ['worktree', 'tag-color', '--tag', 'a', '--tag', 'b', '--color', 'rose'],
+      'Pass --tag once'
+    )
+  })
+
+  it('shows a tag with no color as a dash', async () => {
+    queueFixtures(callMock, okFixture('req_1', { tags: [{ name: 'api', count: 1 }] }))
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    await main(['worktree', 'tags'], '/tmp/repo')
+    expect(logSpy.mock.calls.flat().join('\n')).toBe('api  -  1')
+  })
+
   it('rejects --tag on commands that do not take it', async () => {
     await expectRejected(['worktree', 'list', '--tag', 'api'], '--tag')
   })

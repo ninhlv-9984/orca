@@ -19,6 +19,7 @@ import {
   createWorktreeSharedPaths
 } from '../ipc/worktree-symlinks'
 import { resolveWorktreeSharedDirectories } from '../git/worktree-shared-directories'
+import { withStoredWorkspaceTags } from '../worktree-tags'
 import type { RuntimeManagedWorktreeCreateArgs } from './runtime-managed-worktree-create-types'
 import type { RemoteTrackingBase } from './runtime-remote-fetch-controller'
 import type { RuntimeStore } from './runtime-store-contract'
@@ -141,11 +142,13 @@ export async function materializeRuntimeLocalWorktree<T>(args: {
       ...(request.workspaceStatus !== undefined ? { workspaceStatus: request.workspaceStatus } : {})
     })
   )
-  const worktree = {
+  const persistedWorktree = {
     ...mergeWorktree(repo.id, created, meta),
     hostId: meta.hostId ?? getRepoExecutionHostId(repo)
   }
-  const metadataResult = args.onMetadataPersisted(worktree)
+  const metadataResult = args.onMetadataPersisted(persistedWorktree)
+  // Why: inheritance writes tags during onMetadataPersisted, after the projection above.
+  const worktree = withStoredWorkspaceTags(store, persistedWorktree)
 
   if ((repo.symlinkPaths ?? []).length > 0) {
     await timing.time('create_symlinks', () =>
