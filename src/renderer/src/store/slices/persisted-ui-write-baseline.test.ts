@@ -31,6 +31,7 @@ function makeBaseline(overrides: Partial<PersistedUIWriteBaseline> = {}): Persis
     alwaysShowDefaultBranchWorkspace: true,
     explorerDisplayRootByWorktree: {},
     showDotfilesByWorktree: {},
+    filterTags: [],
     filterRepoIds: [],
     acknowledgedAgentsByPaneKey: {},
     activityClearedAtByPaneKey: {},

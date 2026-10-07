@@ -159,6 +159,7 @@ describe('computeClearFilterActions', () => {
     expect(computeClearFilterActions(filterState())).toEqual({
       resetShowSleepingWorkspaces: false,
       resetFilterRepoIds: false,
+      resetFilterTags: false,
       resetHideDefaultBranchWorkspace: false,
       resetHideAutomationGeneratedWorkspaces: false,
       resetHideCliCreatedWorkspaces: false,
@@ -176,6 +177,7 @@ describe('computeClearFilterActions', () => {
     expect(computeClearFilterActions(filterState({ hideDefaultBranchWorkspace: true }))).toEqual({
       resetShowSleepingWorkspaces: false,
       resetFilterRepoIds: false,
+      resetFilterTags: false,
       resetHideDefaultBranchWorkspace: true,
       resetHideAutomationGeneratedWorkspaces: false,
       resetHideCliCreatedWorkspaces: false,
@@ -192,6 +194,7 @@ describe('computeClearFilterActions', () => {
     ).toEqual({
       resetShowSleepingWorkspaces: false,
       resetFilterRepoIds: false,
+      resetFilterTags: false,
       resetHideDefaultBranchWorkspace: false,
       resetHideAutomationGeneratedWorkspaces: true,
       resetHideCliCreatedWorkspaces: false,
@@ -206,6 +209,7 @@ describe('computeClearFilterActions', () => {
     expect(computeClearFilterActions(filterState({ hideCliCreatedWorkspaces: true }))).toEqual({
       resetShowSleepingWorkspaces: false,
       resetFilterRepoIds: false,
+      resetFilterTags: false,
       resetHideDefaultBranchWorkspace: false,
       resetHideAutomationGeneratedWorkspaces: false,
       resetHideCliCreatedWorkspaces: true,
@@ -220,6 +224,7 @@ describe('computeClearFilterActions', () => {
     expect(computeClearFilterActions(filterState({ hideDetachedHeadWorkspaces: true }))).toEqual({
       resetShowSleepingWorkspaces: false,
       resetFilterRepoIds: false,
+      resetFilterTags: false,
       resetHideDefaultBranchWorkspace: false,
       resetHideAutomationGeneratedWorkspaces: false,
       resetHideCliCreatedWorkspaces: false,
@@ -247,6 +252,7 @@ describe('computeClearFilterActions', () => {
     expect(computeClearFilterActions(filterState({ workspaceHostScope: 'ssh:host-1' }))).toEqual({
       resetShowSleepingWorkspaces: false,
       resetFilterRepoIds: false,
+      resetFilterTags: false,
       resetHideDefaultBranchWorkspace: false,
       resetHideAutomationGeneratedWorkspaces: false,
       resetHideCliCreatedWorkspaces: false,
@@ -263,6 +269,7 @@ describe('computeClearFilterActions', () => {
     ).toEqual({
       resetShowSleepingWorkspaces: false,
       resetFilterRepoIds: false,
+      resetFilterTags: false,
       resetHideDefaultBranchWorkspace: false,
       resetHideAutomationGeneratedWorkspaces: false,
       resetHideCliCreatedWorkspaces: false,
@@ -287,6 +294,7 @@ describe('computeClearFilterActions', () => {
     ).toEqual({
       resetShowSleepingWorkspaces: true,
       resetFilterRepoIds: true,
+      resetFilterTags: false,
       resetHideDefaultBranchWorkspace: true,
       resetHideAutomationGeneratedWorkspaces: true,
       resetHideCliCreatedWorkspaces: false,

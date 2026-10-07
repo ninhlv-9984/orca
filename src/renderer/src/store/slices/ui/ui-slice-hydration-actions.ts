@@ -11,6 +11,11 @@ import {
   normalizeExecutionHostOrder,
   normalizeVisibleExecutionHostIds
 } from '../../../../../shared/execution-host'
+import {
+  normalizeWorkspaceTagColors,
+  normalizeWorkspaceTagList
+} from '../../../../../shared/worktree/worktree-tags'
+import { persistedUIValuesEqual } from '../../../../../shared/persisted-ui-equality'
 import { normalizeFeatureInteractions } from '../../../../../shared/feature-interactions'
 import { normalizeContextualTourIds } from '../../../../../shared/contextual-tours'
 import { normalizeFeatureTipIds } from '../../../../../shared/feature-tips'
@@ -77,6 +82,8 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
         const validRepoIds = new Set(s.repos.map((repo) => repo.id))
         const validRepoHostIdentities = new Set(s.repos.map(getRepoHostIdentity))
         const persistedFilterRepoIds = sanitizePersistedRepoIds(ui.filterRepoIds)
+        const incomingFilterTags = normalizeWorkspaceTagList(ui.filterTags)
+        const incomingTagColors = normalizeWorkspaceTagColors(ui.worktreeTagColors)
         const persistedAgentsFilterRepoIds = sanitizePersistedRepoIds(ui.agentsFilterRepoIds)
         // Why: pre-rename builds used sidekick* keys; read as fallback only so new pet* writes win after upgrade.
         const customPets = Array.isArray(ui.customPets)
@@ -143,6 +150,14 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
             validRepoIds.size === 0
               ? persistedFilterRepoIds
               : persistedFilterRepoIds.filter((repoId) => validRepoIds.has(repoId)),
+          filterTags: persistedUIValuesEqual(s.filterTags, incomingFilterTags)
+            ? s.filterTags
+            : incomingFilterTags,
+          // Why: main assigns colors (CLI agents too) and broadcasts them; copy so open sidebars update live.
+          // Not a writer-baseline field: the renderer never echoes this back through the debounced writer.
+          worktreeTagColors: persistedUIValuesEqual(s.worktreeTagColors, incomingTagColors)
+            ? s.worktreeTagColors
+            : incomingTagColors,
           agentsVisibleHostIds: preserveStringArrayIdentity(
             s.agentsVisibleHostIds,
             normalizeVisibleExecutionHostIds(ui.agentsVisibleHostIds)

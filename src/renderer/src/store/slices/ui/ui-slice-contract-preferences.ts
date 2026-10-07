@@ -14,6 +14,10 @@ import type {
 } from '../../../../../shared/ui-chrome-types'
 import type { UsagePercentageDisplay } from '../../../../../shared/usage-percentage-display'
 import type { AutomationHostFilter } from '../../../../../shared/automation-host-filter'
+import type {
+  WorkspaceTagColorId,
+  WorkspaceTagColors
+} from '../../../../../shared/worktree/worktree-tags'
 import type { WorkspaceStatusDefinition } from '../../../../../shared/worktree/types'
 import type { WorkspacePortScanResult } from '../../../../../shared/workspace-ports'
 import type { CustomPet } from '../../../../../shared/pet-types'
@@ -66,6 +70,12 @@ export type UISlicePreferences = {
   toggleShowDotfilesForWorktree: (worktreeId: string) => void
   filterRepoIds: readonly string[]
   setFilterRepoIds: (ids: readonly string[]) => void
+  /** Workspace tag filter (OR, case-insensitive); persisted through the debounced UI writer like filterRepoIds. */
+  filterTags: readonly string[]
+  setFilterTags: (tags: readonly string[]) => void
+  /** Main-owned tag colors keyed by lowercase tag name; mirrored from persisted UI state. */
+  worktreeTagColors: WorkspaceTagColors
+  setWorkspaceTagColor: (tag: string, color: WorkspaceTagColorId) => void
   /** Agents-view scope filters, independent from workspace navigation filters. */
   agentsVisibleHostIds: VisibleWorkspaceHostIds
   setAgentsVisibleHostIds: (ids: VisibleWorkspaceHostIds) => void

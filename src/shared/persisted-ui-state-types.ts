@@ -81,6 +81,8 @@ export type PersistedUIState = {
   /** Workspace tag colors keyed by lowercase tag name; assigned by main, merged (never pruned) on write. */
   worktreeTagColors?: Record<string, WorkspaceTagColorId>
   filterRepoIds: string[]
+  /** Workspace tag filter (OR, case-insensitive); empty/absent = no tag filter. Renderer-owned like filterRepoIds. */
+  filterTags?: string[]
   /** Agents-view host scope; deliberately separate from visibleWorkspaceHostIds so a monitoring surface never inherits nav filters silently. `null` = all hosts. */
   agentsVisibleHostIds?: VisibleWorkspaceHostIds
   /** Agents-view project filter; empty = all projects. Separate from filterRepoIds (workspace nav). */
@@ -210,6 +212,8 @@ export type PersistedUIState = {
   _jiraIssueWorktreeCardPropertyDefaulted?: boolean
   /** One-shot backfill flag for 'host', which became a toggleable property after earlier profiles were already stamped. */
   _hostWorktreeCardPropertyDefaulted?: boolean
+  /** One-shot backfill flag for 'tags', which joined the default card properties after earlier profiles were already stamped. */
+  _tagsWorktreeCardPropertyDefaulted?: boolean
   /** totalAgentsSpawned snapshot at first sighting of the current app version, so the nag counts agents since last update (not from zero). */
   starNagBaselineAgents?: number | null
   /** App version that set the current baseline; a version change re-captures the baseline on next spawn, restarting the nag countdown. */
