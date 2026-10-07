@@ -14,6 +14,7 @@ import { orderHostSectionOptions } from './host-section-order'
 import { buildSidebarHostOptions } from './sidebar-host-options'
 import { getLogicalRepoOrderRankById } from './project-header-drop'
 import { getRenderedWorktreesInSidebarOrder } from './worktree-sidebar-row-preference'
+import { filterFolderWorkspacesByTags } from './workspace-tag-filter'
 import { selectWorktreeListReviewCacheInputs } from './worktree-list/listing/review-cache-inputs'
 import {
   filterFolderWorkspacesForVisibleHosts,
@@ -84,11 +85,15 @@ export function computeRenderedSidebarRows(
     EMPTY_INBOX_BY_REPO,
     EMPTY_PENDING_CREATIONS,
     { projects: projection.projects, projectHostSetups: projection.setups },
-    filterFolderWorkspacesForVisibleHosts(
-      state.folderWorkspaces,
-      projectGroups,
-      visibleHostIdSet,
-      defaultHostId
+    // Why: shortcut numbering must follow the tag filter the sidebar applies to folder workspaces.
+    filterFolderWorkspacesByTags(
+      filterFolderWorkspacesForVisibleHosts(
+        state.folderWorkspaces,
+        projectGroups,
+        visibleHostIdSet,
+        defaultHostId
+      ),
+      state.filterTags
     ),
     // Why no hostLabelById: it only feeds display-only host context labels, never row order.
     undefined,

@@ -220,6 +220,7 @@ export function getDefaultUIState(): PersistedUIState {
     showDotfilesByWorktree: {},
     worktreeTagColors: {},
     filterRepoIds: [],
+    filterTags: [],
     agentsVisibleHostIds: null,
     agentsFilterRepoIds: [],
     agentsHideWorkspacesFromOtherDevices: false,

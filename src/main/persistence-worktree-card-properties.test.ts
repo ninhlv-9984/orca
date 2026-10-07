@@ -82,7 +82,8 @@ describe('Store', () => {
       'comment',
       'ports',
       'inline-agents',
-      'host'
+      'host',
+      'tags'
     ])
     expect(store.getUI()._inlineAgentsDefaultedForAllUsers).toBe(true)
     expect(store.getUI()._expandedWorktreeCardPropertiesDefaulted).toBe(true)
@@ -120,7 +121,8 @@ describe('Store', () => {
       'comment',
       'ports',
       'inline-agents',
-      'host'
+      'host',
+      'tags'
     ])
     expect(store.getUI().worktreeCardProperties).not.toContain('branch')
     expect(store.getUI()._inlineAgentsDefaultedForAllUsers).toBe(true)
@@ -151,7 +153,8 @@ describe('Store', () => {
       'comment',
       'ports',
       'inline-agents',
-      'host'
+      'host',
+      'tags'
     ])
     expect(store.getUI().worktreeCardProperties).not.toContain('branch')
     expect(store.getUI()._worktreeCardModeDefaulted).toBe(true)
@@ -182,7 +185,8 @@ describe('Store', () => {
       'pr',
       'ports',
       'inline-agents',
-      'host'
+      'host',
+      'tags'
     ])
     expect(store.getUI().worktreeCardProperties).not.toContain('branch')
   })
@@ -204,7 +208,7 @@ describe('Store', () => {
     })
     const store = await createStore()
 
-    expect(store.getUI().worktreeCardProperties).toEqual(['status', 'unread', 'pr', 'host'])
+    expect(store.getUI().worktreeCardProperties).toEqual(['status', 'unread', 'pr', 'host', 'tags'])
     expect(store.getUI().worktreeCardProperties).not.toContain('branch')
     expect(store.getUI().worktreeCardProperties).not.toContain('ports')
     expect(store.getUI().worktreeCardProperties).not.toContain('inline-agents')
@@ -273,7 +277,8 @@ describe('Store', () => {
       'pr',
       'comment',
       'ports',
-      'host'
+      'host',
+      'tags'
     ])
     expect(store.getUI().worktreeCardProperties).not.toContain('branch')
     expect(store.getUI().worktreeCardProperties).not.toContain('inline-agents')
@@ -312,7 +317,8 @@ describe('Store', () => {
       'pr',
       'ports',
       'inline-agents',
-      'host'
+      'host',
+      'tags'
     ])
     expect(
       store.getUI().worktreeCardProperties?.filter((property) => property === 'jira-issue')
@@ -343,7 +349,8 @@ describe('Store', () => {
       'issue',
       'linear-issue',
       'pr',
-      'host'
+      'host',
+      'tags'
     ])
     expect(store.getUI().worktreeCardProperties).not.toContain('jira-issue')
   })
@@ -454,7 +461,8 @@ describe('Store', () => {
         _inlineAgentsDefaultedForAllUsers: true,
         _expandedWorktreeCardPropertiesDefaulted: true,
         _jiraIssueWorktreeCardPropertyDefaulted: true,
-        _hostWorktreeCardPropertyDefaulted: true
+        _hostWorktreeCardPropertyDefaulted: true,
+        _tagsWorktreeCardPropertyDefaulted: true
       },
       githubCache: { pr: {}, issue: {} },
       workspaceSession: {}
@@ -463,6 +471,52 @@ describe('Store', () => {
 
     expect(store.getUI().worktreeCardProperties).toEqual(['status', 'unread', 'pr'])
     expect(store.getUI().worktreeCardProperties).not.toContain('host')
+  })
+
+  it('backfills tags once for profiles stamped before it became a card property', async () => {
+    writeDataFile({
+      schemaVersion: 1,
+      repos: [],
+      worktreeMeta: {},
+      settings: { compactWorktreeCards: false },
+      ui: {
+        worktreeCardProperties: ['status', 'unread', 'pr', 'host'],
+        _inlineAgentsDefaultedForAllUsers: true,
+        _expandedWorktreeCardPropertiesDefaulted: true,
+        _jiraIssueWorktreeCardPropertyDefaulted: true,
+        _hostWorktreeCardPropertyDefaulted: true
+      },
+      githubCache: { pr: {}, issue: {} },
+      workspaceSession: {}
+    })
+    const store = await createStore()
+
+    expect(
+      store.getUI().worktreeCardProperties?.filter((property) => property === 'tags')
+    ).toHaveLength(1)
+    expect(store.getUI()._tagsWorktreeCardPropertyDefaulted).toBe(true)
+  })
+
+  it('preserves a deliberate tags removal after the backfill has run', async () => {
+    writeDataFile({
+      schemaVersion: 1,
+      repos: [],
+      worktreeMeta: {},
+      settings: { compactWorktreeCards: false },
+      ui: {
+        worktreeCardProperties: ['status', 'unread', 'pr', 'host'],
+        _inlineAgentsDefaultedForAllUsers: true,
+        _expandedWorktreeCardPropertiesDefaulted: true,
+        _jiraIssueWorktreeCardPropertyDefaulted: true,
+        _hostWorktreeCardPropertyDefaulted: true,
+        _tagsWorktreeCardPropertyDefaulted: true
+      },
+      githubCache: { pr: {}, issue: {} },
+      workspaceSession: {}
+    })
+    const store = await createStore()
+
+    expect(store.getUI().worktreeCardProperties).not.toContain('tags')
   })
 
   it.each([
