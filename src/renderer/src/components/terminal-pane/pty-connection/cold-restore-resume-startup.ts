@@ -16,11 +16,8 @@ import {
   normalizeAgentProviderSession
 } from '../../../../../shared/agent-session-resume'
 
-import {
-  claimIdleAgentSessionForPane,
-  selectIdleAgentEntryForColdRestore
-} from './idle-agent-cold-restore-entry'
 import type { ColdRestoreAgentResumeStartup } from './fresh-spawn-types'
+import { selectIdleAgentEntryForColdRestore } from './idle-agent-cold-restore-entry'
 
 import type { ConnectPanePtySession } from './connect-pane-pty-session'
 
@@ -34,17 +31,23 @@ export function bindBuildColdRestoreAgentResumeStartup(session: ConnectPanePtySe
     const sleepingRecordEntry = session.getSleepingRecordForPane(state)
     const sleepingRecord = sleepingRecordEntry?.record
 
-    // Why (fork): an idle `done` row with no sleeping record is an agent that was still running at
-    // shutdown; resume it by its session id. A record keeps precedence so hibernation/wake is unchanged.
-    const idleEntry = sleepingRecord ? null : selectIdleAgentEntryForColdRestore(entry)
+    // Why (fork): an idle `done` row with no record was still running at shutdown; a record keeps precedence.
+    const idleEntry = sleepingRecord
+      ? null
+      : selectIdleAgentEntryForColdRestore({
+          entry,
+          paneKey: session.cacheKey,
+          worktreeId: session.deps.worktreeId,
+          state,
+          now: Date.now()
+        })
     const liveEntry = entry && entry.state !== 'done' ? entry : idleEntry
-    const useLiveEntry = liveEntry
-    const agent = useLiveEntry ? liveEntry.agentType : sleepingRecord?.agent
+    const agent = liveEntry ? liveEntry.agentType : sleepingRecord?.agent
     if (!agent || !isResumableTuiAgent(agent)) {
       return null
     }
     const providerSession = normalizeAgentProviderSession(
-      useLiveEntry ? liveEntry.providerSession : sleepingRecord?.providerSession
+      liveEntry ? liveEntry.providerSession : sleepingRecord?.providerSession
     )
     if (!providerSession) {
       return null
@@ -61,7 +64,7 @@ export function bindBuildColdRestoreAgentResumeStartup(session: ConnectPanePtySe
     // out. The catalog's answer for the record's worktree covers that window.
     if (
       agentResumeOriginNamesAnotherExecutionHost(
-        useLiveEntry ? liveEntry.connectionId : sleepingRecord?.connectionId,
+        liveEntry ? liveEntry.connectionId : sleepingRecord?.connectionId,
         session.executionHostId
       ) ||
       (sleepingRecord && sleepingRecordNamesAnotherExecutionHost(sleepingRecord, state))
@@ -70,13 +73,13 @@ export function bindBuildColdRestoreAgentResumeStartup(session: ConnectPanePtySe
     }
     const matchingSleepingLaunchConfig =
       sleepingRecord?.launchConfig &&
-      (!useLiveEntry ||
+      (!liveEntry ||
         (sleepingRecord.agent === agent &&
           agentProviderSessionsEqual(agent, sleepingRecord.providerSession, providerSession)))
         ? sleepingRecord.launchConfig
         : undefined
     const launchConfig =
-      (useLiveEntry ? state.getAgentLaunchConfigForStatusEntry(liveEntry) : undefined) ??
+      (liveEntry ? state.getAgentLaunchConfigForStatusEntry(liveEntry) : undefined) ??
       matchingSleepingLaunchConfig
     // Why: the resume line is typed into this pane's live shell, so its quoting must
     // follow the tab's effective Windows shell, not the win32 PowerShell default.
@@ -110,9 +113,6 @@ export function bindBuildColdRestoreAgentResumeStartup(session: ConnectPanePtySe
     if (!startupPlan) {
       return null
     }
-    if (idleEntry && !claimIdleAgentSessionForPane(idleEntry, session.cacheKey)) {
-      return null
-    }
     const coldRestoreLaunchToken = createBrowserUuid()
     // Why: cold restore means the PTY process is gone but the agent provider
     // session is still resumable, so the replacement spawn must launch it.
@@ -126,7 +126,7 @@ export function bindBuildColdRestoreAgentResumeStartup(session: ConnectPanePtySe
       launchConfig: startupPlan.launchConfig,
       resumeProviderSession: providerSession,
       launchToken: coldRestoreLaunchToken,
-      useLiveEntry: Boolean(useLiveEntry),
+      useLiveEntry: Boolean(liveEntry),
       hasSleepingRecord: Boolean(sleepingRecord),
       sleepingRecordEntry
     }

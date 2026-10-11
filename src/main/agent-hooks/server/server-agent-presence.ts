@@ -4,6 +4,9 @@ import {
   type AgentProcessVerdict
 } from '../../../shared/agent-process-presence'
 import { probeAgentProcessPresence } from '../../../shared/agent-process-presence-probe'
+import { admitLegacyAgentStatus } from '../../../shared/agent-hook-listener/listener-state'
+import { AGENT_STATUS_2A_CURRENT_PRODUCER_MODE } from '../../../shared/agent-status-legacy-adapter'
+import type { EnrichedAgentHookEventPayload } from './server-types'
 import { AgentHookServerLifecycle } from './server-lifecycle'
 
 export abstract class AgentHookServerAgentPresence extends AgentHookServerLifecycle {
@@ -17,7 +20,7 @@ export abstract class AgentHookServerAgentPresence extends AgentHookServerLifecy
     const sender = event.agentPresence?.process
     const owner = row.agentPresence
     if (sender && owner?.process && !owner.ended && !isSameAgentProcess(sender, owner.process)) {
-      void this.checkAgentPresence(row.paneKey)
+      void this.checkAgentPresence(row.paneKey, event.agentPresence)
     }
   }
 
@@ -29,9 +32,15 @@ export abstract class AgentHookServerAgentPresence extends AgentHookServerLifecy
     return presence?.process !== undefined && !presence.ended
   }
 
-  checkAgentPresence(paneKey: string): Promise<AgentProcessVerdict | null> {
+  checkAgentPresence(
+    paneKey: string,
+    successor?: AgentHookEventPayload['agentPresence']
+  ): Promise<AgentProcessVerdict | null> {
     const resolved = this.resolvePaneKeyAlias(paneKey)
-    const row = this.state.lastStatusByPaneKey.get(resolved)
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: main admits enriched legacy rows; the shared view declares their base event type.
+    const row = this.state.lastStatusByPaneKey.get(resolved) as
+      | EnrichedAgentHookEventPayload
+      | undefined
     // Why: an ended owner already published its exit, and an owner no hook identified cannot be checked.
     if (!row?.agentPresence?.process || row.agentPresence.ended) {
       return Promise.resolve(null)
@@ -52,7 +61,21 @@ export abstract class AgentHookServerAgentPresence extends AgentHookServerLifecy
         ) {
           return 'unverifiable' as const
         }
-        if (verdict === 'exited') {
+        if (verdict === 'exited' && successor?.process && successor.agent === presence.agent) {
+          // Why (fork): a resumed agent's hook proves a live process in a pane whose hydrated owner died with the reboot; hand over ownership so the pane stays resumable.
+          const handedOver = {
+            ...row,
+            agentPresence: { agent: successor.agent, process: successor.process }
+          }
+          admitLegacyAgentStatus(
+            this.state,
+            'main-status-cleanup',
+            handedOver,
+            AGENT_STATUS_2A_CURRENT_PRODUCER_MODE
+          )
+          this.commitStatusRowMutation(row, handedOver)
+          this.scheduleStatusPersist()
+        } else if (verdict === 'exited') {
           this.reconcileEndedProcessForPaneKeys([resolved], {
             preserveResumeIdentity: true,
             endedPresence: { ...presence, ended: true }
