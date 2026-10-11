@@ -28,10 +28,10 @@ import {
 import { claudeRowHasUnlistedLiveWork } from './agent-hook-listener/providers/claude-pane-hold-evidence'
 import { readString } from './agent-hook-listener/tool-input-preview'
 /** Canonical transport-agnostic normalization entry shared by main and relay listeners. */
+// Why (fork): `other` is also what a SIGTERM/SIGHUP at reboot or daemon death reports, so it must not retire a resumable pane.
 const CLAUDE_EXIT_SESSION_END_REASONS = new Set([
   'prompt_input_exit',
   'logout',
-  'other',
   'bypass_permissions_disabled'
 ])
 

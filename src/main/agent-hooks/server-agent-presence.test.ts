@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { SpoolRecord } from '../../shared/agent-hook-spool'
 import { AgentHookServer } from './server'
 import { buildBody, PANE, postHookEvent } from './server.test-fixtures'
 
@@ -22,6 +23,14 @@ afterEach(() => {
 })
 
 class PresenceTestServer extends AgentHookServer {
+  replaySpool(record: SpoolRecord): void {
+    this.ingestSpoolRecord(record)
+  }
+
+  rowPid(): number | undefined {
+    return this.state.lastStatusByPaneKey.get(PANE)?.agentPresence?.process?.pid
+  }
+
   applyTranscriptUpdate(): void {
     const row = this.state.lastStatusByPaneKey.get(PANE)
     if (row) {
@@ -76,6 +85,64 @@ function visible(server: AgentHookServer): boolean {
   return server.getStatusSnapshot().some((row) => row.paneKey === PANE && !row.providerSessionOnly)
 }
 
+function resumable(server: AgentHookServer): boolean {
+  const row = server.getStatusSnapshot().find((entry) => entry.paneKey === PANE)
+  return Boolean(row && !row.providerSessionOnly && row.state === 'done' && row.providerSession)
+}
+
+describe('idle Claude panes across signal-ended sessions (fork)', () => {
+  it('keeps an idle pane resumable when SessionEnd reports a signal exit (other)', async () => {
+    const server = await createServer()
+    await hook(server, 'SessionStart')
+    await hook(server, 'Stop')
+    await hook(server, 'SessionEnd', 'session-a', 'other')
+    expect(resumable(server)).toBe(true)
+  })
+
+  it('keeps it resumable when the signal-exit SessionEnd arrives through spool replay', async () => {
+    const server = await createServer()
+    await hook(server, 'SessionStart')
+    await hook(server, 'Stop')
+    server.replaySpool({
+      paneKey: PANE,
+      tabId: 'tab-1',
+      worktreeId: 'wt-1',
+      env: 'production',
+      source: 'claude',
+      hookEventName: 'SessionEnd',
+      agentProcess: JSON.stringify({
+        pid: 4001,
+        platform: process.platform,
+        startTime: 'birth-4001'
+      }),
+      payload: { hook_event_name: 'SessionEnd', session_id: 'session-a', reason: 'other' },
+      receivedAt: Date.now()
+    })
+    expect(resumable(server)).toBe(true)
+  })
+
+  it.each(['prompt_input_exit', 'logout'])(
+    'retires the pane on a user exit (%s)',
+    async (reason) => {
+      const server = await createServer()
+      await hook(server, 'SessionStart')
+      await hook(server, 'Stop')
+      await hook(server, 'SessionEnd', 'session-a', reason)
+      expect(resumable(server)).toBe(false)
+    }
+  )
+
+  it('hands ownership to a resumed agent instead of retiring the pane with its dead owner', async () => {
+    const server = await createServer()
+    await hook(server, 'SessionStart')
+    await hook(server, 'Stop')
+    probe.mockResolvedValue('exited')
+    await hook(server, 'SessionStart', 'session-a', undefined, 5001)
+    await vi.waitFor(() => expect(server.rowPid()).toBe(5001))
+    expect(resumable(server)).toBe(true)
+  })
+})
+
 describe('host-owned hook presence', () => {
   it('clears the status on SessionEnd while the terminal survives, without a renderer', async () => {
     const server = await createServer()
@@ -114,7 +181,7 @@ describe('host-owned hook presence', () => {
     expect(visible(server)).toBe(true)
     await hook(server, 'PostToolUse', 'outer')
     expect(state(server)).toBe('working')
-    await hook(server, 'SessionEnd', 'outer', 'other')
+    await hook(server, 'SessionEnd', 'outer', 'prompt_input_exit')
     expect(visible(server)).toBe(false)
   })
 
@@ -339,7 +406,9 @@ describe('host-owned hook presence', () => {
     expect(visible(server)).toBe(true)
     await hook(server, 'SessionStart', 'relaunch', undefined, 4002)
     await vi.waitFor(() => expect(probe).toHaveBeenCalledOnce())
-    await vi.waitFor(() => expect(visible(server)).toBe(false))
+    // Why (fork): the relaunched agent takes over the pane instead of retiring it, so a resumed idle pane stays resumable.
+    await vi.waitFor(() => expect(server.rowPid()).toBe(4002))
+    expect(visible(server)).toBe(true)
     await hook(server, 'UserPromptSubmit', 'relaunch', undefined, 4002)
     expect(state(server)).toBe('working')
   })

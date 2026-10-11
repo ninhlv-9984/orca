@@ -70,3 +70,26 @@ by an in-memory claim keyed by agent + session id.
 Limits: an agent exited while Orca was closed (no hook server to drop the row), an agent whose
 provider emits no exit signal, or a row dismissed from the dashboard while the agent still ran, can
 be wrongly resumed / not resumed; rows older than the 7-day hydration TTL are gone.
+
+## Follow-up: signal-ended sessions and the second reboot
+
+Evidence (claude 2.1.296 under a pty with a SessionEnd hook): `kill -TERM/-HUP/-INT` on an idle
+interactive claude each fire SessionEnd with `reason: "other"` before exiting. So a reboot/logout
+reports `other`, which `shared/agent-hook-listener.ts` treated as a user exit, turning the done row
+into a providerSessionOnly remnant (live or via spool replay) and defeating the feature.
+
+Final mechanism:
+- `other` is no longer an exit reason (only `prompt_input_exit`, `logout`, `bypass_permissions_disabled`
+  end the pane). The SessionEnd(other) hook is then an ordinary event: the idle row, its owner presence
+  and its provider session stay, so cold restore resumes it. Live and replay share this path.
+- Hydrated rows keep the pre-reboot process as owner; the resumed agent's first hook used to make the
+  probe call that owner `exited` and remnant the pane (second reboot without typing then lost it).
+  `checkAgentPresence` now hands ownership to the reporting process when it is the same agent type.
+- Renderer idle path: session identity via `getProviderSessionClaimKey`; skipped when a record or a
+  live row on another pane holds the session, or a newer done row does (stateless, no claim map);
+  rows older than 3 days are ignored (rows without presence can never be invalidated, and 3 days
+  bounds how stale an exit-while-closed can be).
+
+Limits: a user exit that reports `other` (none known) would leave a stale done row until a probe or
+PTY teardown; rows without agentPresence rely on the 3-day cap; an idle row dismissed from the
+dashboard is not resumed.
