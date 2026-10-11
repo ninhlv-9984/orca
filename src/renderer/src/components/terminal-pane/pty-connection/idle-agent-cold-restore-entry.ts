@@ -1,54 +1,76 @@
 import type { AgentStatusEntry } from '../../../../../shared/agent-status-types'
-import { isResumableTuiAgent } from '../../../../../shared/agent-session-resume'
+import {
+  isResumableTuiAgent,
+  type SleepingAgentSessionRecord
+} from '../../../../../shared/agent-session-resume'
+import { getProviderSessionClaimKey } from '@/lib/sleeping-agent-pane-ownership'
 
-// Why: two panes can hold the same provider session (e.g. a duplicated tab); resuming it in both
-// would run one transcript twice. The first pane to claim it keeps it, and the claim is idempotent
-// because the builder runs several times per pane while it reconnects.
-const claimedByPaneKey = new Map<string, string>()
+// Why: hydrated rows without process presence can never be invalidated by a probe, so age is the only bound.
+export const IDLE_ROW_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000
 
-function claimKey(entry: AgentStatusEntry): string | null {
-  const session = entry.providerSession
-  if (!session) {
+type IdleResumeState = {
+  agentStatusByPaneKey: Record<string, AgentStatusEntry>
+  sleepingAgentSessionsByPaneKey: Record<string, SleepingAgentSessionRecord>
+}
+
+function claimKeyFor(entry: AgentStatusEntry, worktreeId: string): string | null {
+  if (!entry.providerSession || !isResumableTuiAgent(entry.agentType)) {
     return null
   }
-  const transcript = entry.agentType === 'pi' ? (session.transcriptPath ?? '') : ''
-  return `${entry.agentType}\0${session.key}\0${session.id}\0${transcript}`
+  return getProviderSessionClaimKey({
+    paneKey: entry.paneKey,
+    worktreeId,
+    agent: entry.agentType,
+    providerSession: entry.providerSession,
+    prompt: entry.prompt,
+    state: entry.state,
+    capturedAt: entry.updatedAt,
+    updatedAt: entry.updatedAt
+  })
 }
 
 /**
- * A `done` status row that survived to cold restore is an agent that was idle but still running at
- * shutdown: the hook server turns an exited agent (SessionEnd, process probe, dismissal) into a
- * providerSessionOnly remnant, which the renderer never stores as a status row. Returns the row
- * only when it names an exact provider session; there is deliberately no per-directory fallback.
+ * A `done` row that survives to cold restore is an agent idle but alive at shutdown: a user exit
+ * leaves only a providerSessionOnly remnant the renderer never stores. No per-directory fallback.
  */
-export function selectIdleAgentEntryForColdRestore(
+export function selectIdleAgentEntryForColdRestore(args: {
   entry: AgentStatusEntry | undefined
-): AgentStatusEntry | null {
+  paneKey: string
+  worktreeId: string
+  state: IdleResumeState
+  now: number
+}): AgentStatusEntry | null {
+  const { entry, paneKey, worktreeId, state, now } = args
   if (
     !entry ||
     entry.state !== 'done' ||
     entry.terminalResumeEligible === false ||
-    !entry.providerSession ||
-    !isResumableTuiAgent(entry.agentType)
+    now - entry.updatedAt > IDLE_ROW_MAX_AGE_MS
   ) {
     return null
   }
-  return entry
-}
-
-export function claimIdleAgentSessionForPane(entry: AgentStatusEntry, paneKey: string): boolean {
-  const key = claimKey(entry)
+  const key = claimKeyFor(entry, entry.worktreeId ?? worktreeId)
   if (!key) {
-    return false
+    return null
   }
-  const owner = claimedByPaneKey.get(key)
-  if (owner !== undefined && owner !== paneKey) {
-    return false
+  // Why: another pane's record or live row already owns this session.
+  for (const record of Object.values(state.sleepingAgentSessionsByPaneKey)) {
+    if (record.paneKey !== paneKey && getProviderSessionClaimKey(record) === key) {
+      return null
+    }
   }
-  claimedByPaneKey.set(key, paneKey)
-  return true
-}
-
-export function resetIdleAgentSessionClaimsForTests(): void {
-  claimedByPaneKey.clear()
+  for (const other of Object.values(state.agentStatusByPaneKey)) {
+    if (other.paneKey === paneKey || claimKeyFor(other, other.worktreeId ?? worktreeId) !== key) {
+      continue
+    }
+    // Why: stateless owner choice (newest row, then pane key) keeps resume to one pane per session.
+    const otherWins =
+      other.state !== 'done' ||
+      other.updatedAt > entry.updatedAt ||
+      (other.updatedAt === entry.updatedAt && other.paneKey < paneKey)
+    if (otherWins) {
+      return null
+    }
+  }
+  return entry
 }
