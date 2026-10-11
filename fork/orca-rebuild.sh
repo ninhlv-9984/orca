@@ -20,6 +20,14 @@ fi
 git config rerere.enabled true
 git switch -q "$BRANCH"
 git fetch -q upstream --tags
+# Why: PRs merge into origin/$BRANCH on GitHub, so local is often behind; a stale local would rebase/push without them.
+git fetch -q origin "$BRANCH" || true
+if git rev-parse -q --verify "origin/$BRANCH" >/dev/null &&
+  [[ "$(git rev-parse HEAD)" != "$(git rev-parse "origin/$BRANCH")" ]] &&
+  git merge-base --is-ancestor HEAD "origin/$BRANCH"; then
+  echo "==> $BRANCH is behind origin; fast-forwarding"
+  git merge -q --ff-only "origin/$BRANCH"
+fi
 
 old=$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*' HEAD)
 new=${1:-$(git tag -l 'v[0-9]*' --sort=-v:refname | grep -v -- - | head -1)}
@@ -37,7 +45,6 @@ if [[ "$old" != "$new" ]]; then
 else
   echo "==> $BRANCH already on $new"
   # Why: after resolving a rebase conflict by hand, the rerun lands here; publish the resolved branch.
-  git fetch -q origin "$BRANCH" || true
   if [[ "$(git rev-parse HEAD)" != "$(git rev-parse "origin/$BRANCH" 2>/dev/null)" ]]; then
     git range-diff "origin/$BRANCH...HEAD" || true
     git push -q --force-with-lease origin "$BRANCH"
