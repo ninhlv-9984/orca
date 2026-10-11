@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
 import type { Repo } from '../../../../../../shared/repo-types'
+import type { Worktree } from '../../../../../../shared/worktree/types'
+import { scopeRepoKeyedToTagFilter } from '../../workspace-tag-header-scope'
 import {
   IMPORTED_WORKTREES_KEEP_HIDDEN_ERROR,
   keepImportedWorktreesHiddenCard,
@@ -25,8 +27,11 @@ export function useSidebarExternalWorktreeCards(args: {
   visibleReposForRows: readonly Repo[]
   detectedWorktreesByRepo: AppState['detectedWorktreesByRepo']
   filterRepoIds: readonly string[]
+  filterTags?: readonly string[]
+  visibleWorktrees?: readonly Worktree[]
 }) {
   const { repos, visibleReposForRows, detectedWorktreesByRepo, filterRepoIds } = args
+  const { filterTags, visibleWorktrees = [] } = args
   const updateRepo = useAppStore((s) => s.updateRepo)
   const fetchWorktrees = useAppStore((s) => s.fetchWorktrees)
   const settings = useAppStore((s) => s.settings)
@@ -191,11 +196,21 @@ export function useSidebarExternalWorktreeCards(args: {
     updateRepo
   ])
 
+  const scopedImportedWorktreesByRepo = useMemo(
+    () => scopeRepoKeyedToTagFilter(importedWorktreesByRepo, visibleWorktrees, filterTags),
+    [filterTags, importedWorktreesByRepo, visibleWorktrees]
+  )
+  const scopedNewExternalWorktreesInboxByRepo = useMemo(
+    () => scopeRepoKeyedToTagFilter(newExternalWorktreesInboxByRepo, visibleWorktrees, filterTags),
+    [filterTags, newExternalWorktreesInboxByRepo, visibleWorktrees]
+  )
+
   return {
     importedWorktreeCardActionState,
     newExternalWorktreeInboxActionState,
-    importedWorktreesByRepo,
-    newExternalWorktreesInboxByRepo,
+    // Why: notice cards carry no tags, so under a tag filter they must not keep a project header alive.
+    importedWorktreesByRepo: scopedImportedWorktreesByRepo,
+    newExternalWorktreesInboxByRepo: scopedNewExternalWorktreesInboxByRepo,
     suppressExternalWorktreeInboxRepoId,
     setSuppressExternalWorktreeInboxRepoId,
     handleShowImportedWorktrees,

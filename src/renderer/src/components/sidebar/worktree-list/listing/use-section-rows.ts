@@ -22,6 +22,7 @@ import { addHostSectionRows } from '../../host-section-rows'
 import { orderHostSectionOptions } from '../../host-section-order'
 import { buildSidebarHostOptions } from '../../sidebar-host-options'
 import { selectPendingWorktreeCreationKeys } from './pending-worktree-creation-keys'
+import { scopePendingCreationsToTagFilter } from '../../workspace-tag-header-scope'
 
 type SectionRowsArgs = {
   groupBy: WorktreeGroupBy
@@ -114,14 +115,18 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
   )
   const pendingCreations = useMemo(
     () =>
-      pendingCreationKeys.map((key) => {
-        const separator = key.indexOf(' ')
-        return {
-          creationId: key.slice(0, separator),
-          repoId: key.slice(separator + 1)
-        }
-      }),
-    [pendingCreationKeys]
+      scopePendingCreationsToTagFilter(
+        pendingCreationKeys.map((key) => {
+          const separator = key.indexOf(' ')
+          return {
+            creationId: key.slice(0, separator),
+            repoId: key.slice(separator + 1)
+          }
+        }),
+        worktrees,
+        args.filterTags
+      ),
+    [args.filterTags, pendingCreationKeys, worktrees]
   )
   const hostLabelOverrides = useMemo(
     () => getHostDisplayLabelOverrides(args.settings),
