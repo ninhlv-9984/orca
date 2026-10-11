@@ -16,6 +16,10 @@ import {
   normalizeAgentProviderSession
 } from '../../../../../shared/agent-session-resume'
 
+import {
+  claimIdleAgentSessionForPane,
+  selectIdleAgentEntryForColdRestore
+} from './idle-agent-cold-restore-entry'
 import type { ColdRestoreAgentResumeStartup } from './fresh-spawn-types'
 
 import type { ConnectPanePtySession } from './connect-pane-pty-session'
@@ -30,13 +34,17 @@ export function bindBuildColdRestoreAgentResumeStartup(session: ConnectPanePtySe
     const sleepingRecordEntry = session.getSleepingRecordForPane(state)
     const sleepingRecord = sleepingRecordEntry?.record
 
-    const useLiveEntry = entry && entry.state !== 'done'
-    const agent = useLiveEntry ? entry.agentType : sleepingRecord?.agent
+    // Why (fork): an idle `done` row with no sleeping record is an agent that was still running at
+    // shutdown; resume it by its session id. A record keeps precedence so hibernation/wake is unchanged.
+    const idleEntry = sleepingRecord ? null : selectIdleAgentEntryForColdRestore(entry)
+    const liveEntry = entry && entry.state !== 'done' ? entry : idleEntry
+    const useLiveEntry = liveEntry
+    const agent = useLiveEntry ? liveEntry.agentType : sleepingRecord?.agent
     if (!agent || !isResumableTuiAgent(agent)) {
       return null
     }
     const providerSession = normalizeAgentProviderSession(
-      useLiveEntry ? entry.providerSession : sleepingRecord?.providerSession
+      useLiveEntry ? liveEntry.providerSession : sleepingRecord?.providerSession
     )
     if (!providerSession) {
       return null
@@ -53,7 +61,7 @@ export function bindBuildColdRestoreAgentResumeStartup(session: ConnectPanePtySe
     // out. The catalog's answer for the record's worktree covers that window.
     if (
       agentResumeOriginNamesAnotherExecutionHost(
-        useLiveEntry ? entry.connectionId : sleepingRecord?.connectionId,
+        useLiveEntry ? liveEntry.connectionId : sleepingRecord?.connectionId,
         session.executionHostId
       ) ||
       (sleepingRecord && sleepingRecordNamesAnotherExecutionHost(sleepingRecord, state))
@@ -68,7 +76,7 @@ export function bindBuildColdRestoreAgentResumeStartup(session: ConnectPanePtySe
         ? sleepingRecord.launchConfig
         : undefined
     const launchConfig =
-      (useLiveEntry && entry ? state.getAgentLaunchConfigForStatusEntry(entry) : undefined) ??
+      (useLiveEntry ? state.getAgentLaunchConfigForStatusEntry(liveEntry) : undefined) ??
       matchingSleepingLaunchConfig
     // Why: the resume line is typed into this pane's live shell, so its quoting must
     // follow the tab's effective Windows shell, not the win32 PowerShell default.
@@ -100,6 +108,9 @@ export function bindBuildColdRestoreAgentResumeStartup(session: ConnectPanePtySe
       shell: resumeTarget.shell
     })
     if (!startupPlan) {
+      return null
+    }
+    if (idleEntry && !claimIdleAgentSessionForPane(idleEntry, session.cacheKey)) {
       return null
     }
     const coldRestoreLaunchToken = createBrowserUuid()
