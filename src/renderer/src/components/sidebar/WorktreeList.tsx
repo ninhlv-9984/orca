@@ -154,7 +154,9 @@ const WorktreeList = React.memo(function WorktreeList({
     repos,
     visibleReposForRows: visibleScope.visibleReposForRows,
     detectedWorktreesByRepo,
-    filterRepoIds: filterState.filterRepoIds
+    filterRepoIds: filterState.filterRepoIds,
+    filterTags: filterState.filterTags,
+    visibleWorktrees
   })
   const rowModel = useSidebarSectionRows({
     groupBy,
