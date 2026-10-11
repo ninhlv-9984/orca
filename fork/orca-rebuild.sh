@@ -36,6 +36,12 @@ if [[ "$old" != "$new" ]]; then
   git push -q --force-with-lease origin "$BRANCH"
 else
   echo "==> $BRANCH already on $new"
+  # Why: after resolving a rebase conflict by hand, the rerun lands here; publish the resolved branch.
+  git fetch -q origin "$BRANCH" || true
+  if [[ "$(git rev-parse HEAD)" != "$(git rev-parse "origin/$BRANCH" 2>/dev/null)" ]]; then
+    git range-diff "origin/$BRANCH...HEAD" || true
+    git push -q --force-with-lease origin "$BRANCH"
+  fi
 fi
 
 echo "==> installing dependencies"
