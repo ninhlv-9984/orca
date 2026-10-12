@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Rebuild the fork: rebase the patch branch onto the newest upstream stable tag
-# (or the tag given as $1), build, and install the result on this machine.
+# Rebuild the fork: rebase the patch branch onto an upstream target, build, and
+# install the result on this machine.
 #
-#   orca-rebuild            # newest upstream vX.Y.Z
-#   orca-rebuild v1.4.221   # a specific upstream tag
+#   orca-rebuild            # stay on the current track: upstream/main if the
+#                           # branch is based on it, else the newest vX.Y.Z
+#   orca-rebuild v1.4.221   # a specific upstream tag (switches back to releases)
+#   orca-rebuild main       # upstream/main, unreleased (version X.Y.Z+1-main.DATE.gSHA)
 #
 # On a rebase conflict it stops: resolve, `git rebase --continue`, rerun.
 # rerere is enabled, so a conflict resolved once is replayed automatically.
@@ -29,10 +31,42 @@ if git rev-parse -q --verify "origin/$BRANCH" >/dev/null &&
   git merge -q --ff-only "origin/$BRANCH"
 fi
 
-old=$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*' HEAD)
-new=${1:-$(git tag -l 'v[0-9]*' --sort=-v:refname | grep -v -- - | head -1)}
+# Why: release tags sit on release branches, not on upstream/main, so `git describe` can't find a main-based base.
+# The fork commits are everything not reachable from upstream branches or tags; the base is the parent of the oldest.
+first=$(git rev-list --reverse HEAD --not --remotes=upstream --tags | sed -n 1p)
+if [[ -n "$first" ]]; then old=$(git rev-parse "$first^"); else old=$(git rev-parse HEAD); fi
+latest=$(git tag -l 'v[0-9]*' --sort=-v:refname | grep -v -- - | head -1)
 
-if [[ "$old" != "$new" ]]; then
+case "${1:-}" in
+  main | upstream/main)
+    new=upstream/main
+    echo "==> track: upstream/main (unreleased); 'orca-rebuild $latest' returns to releases"
+    ;;
+  "")
+    # Why: a release tag is never an ancestor of main (release commits), so this only holds when tracking main.
+    if git merge-base --is-ancestor "$old" upstream/main; then
+      new=upstream/main
+      echo "==> track: upstream/main (unreleased); 'orca-rebuild $latest' returns to releases"
+    else
+      new=$latest
+      echo "==> track: releases ($new); 'orca-rebuild main' switches to upstream/main"
+    fi
+    ;;
+  *) new=$1 ;;
+esac
+old_sha=$old
+new_sha=$(git rev-parse "$new^{commit}")
+
+# A build of anything but an exact stable tag gets a synthetic, higher-than-latest version.
+version=
+if [[ -z "$(git tag -l 'v[0-9]*' --points-at "$new_sha" | grep -v -- - || true)" ]]; then
+  IFS=. read -r major minor patch <<<"${latest#v}"
+  version="$major.$minor.$((patch + 1))-main.$(date +%Y%m%d).g${new_sha:0:7}"
+fi
+# Why: the builder config already maps this onto extraMetadata.version (what app.getVersion() reads) without dirtying the tree.
+if [[ -n "$version" ]]; then export ORCA_LOCAL_BUILD_VERSION="$version"; fi
+
+if [[ "$old_sha" != "$new_sha" ]]; then
   echo "==> rebasing $BRANCH: $old -> $new"
   if ! git rebase --onto "$new" "$old" "$BRANCH"; then
     echo "orca-rebuild: conflict while rebasing onto $new." >&2
@@ -98,7 +132,7 @@ case "$(uname -s)" in
       pnpm exec electron-builder --config config/electron-builder.config.cjs --linux deb "--$arch"
     deb=$(ls dist/orca-ide_*.deb)
     echo "==> installing $deb"
-    sudo apt install -y --reinstall "./$deb"
+    sudo apt install -y --reinstall --allow-downgrades "./$deb"
     ;;
   Darwin)
     arch=$([[ "$(uname -m)" == arm64 ]] && echo arm64 || echo x64)
@@ -122,4 +156,8 @@ case "$(uname -s)" in
     ;;
 esac
 
-echo "==> done: Orca $(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*' HEAD) + $(git rev-list --count "$new..HEAD") fork patches"
+if [[ -n "$version" ]]; then
+  echo "==> done: Orca $version + $(git rev-list --count "$new..HEAD") fork patches"
+else
+  echo "==> done: Orca $(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*' HEAD) + $(git rev-list --count "$new..HEAD") fork patches"
+fi
